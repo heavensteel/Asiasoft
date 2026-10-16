@@ -1,0 +1,16 @@
+﻿Caption = MacERP V7
+COMPONENT: TLabel
+Caption = Firma
+COMPONENT: TLabel
+COMPONENT: TLabel
+Caption = KullanÄ±cÄ±
+COMPONENT: TLabel
+Caption = Åifre
+Caption = Ã‡Ä±kÄ±ÅŸ Esc
+Caption = Kapat
+COMPONENT: TEdit
+Caption = GiriÅŸ
+COMPONENT: TcxButton
+COMPONENT: TcxButton
+COMPONENT: TMenuItem
+Caption = GiriÅŸ
