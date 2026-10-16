@@ -1,0 +1,31 @@
+## Build & Compiler Outputs
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio Cache & User Files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Database Dumps & Huge Archives (> 100MB exceeds GitHub limit)
+erp_data.sql
+ERPV7/
+*.ldf
+*.mdf
+*.db-shm
+*.db-wal
+
+## OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
