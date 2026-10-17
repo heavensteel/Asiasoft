@@ -736,6 +736,172 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-cavus-servis")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+
+                // 1. Main Management Form
+                var form = new CavusKantarServisForm();
+                form.StartPosition = FormStartPosition.Manual;
+                form.Location = new Point(0, 0);
+                form.Size = new Size(1360, 780);
+                form.Show();
+                for (int i = 0; i < 40; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpGenel = new Bitmap(form.Width, form.Height))
+                {
+                    form.DrawToBitmap(bmpGenel, new Rectangle(0, 0, form.Width, form.Height));
+                    bmpGenel.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\cavus_servis_genel_ekrani.png");
+                }
+
+                // 2. Filter Pending (Bekleyenler)
+                var cboDurum = GetAllChildren(form).OfType<ComboBox>().FirstOrDefault(c => c.Items.Contains("⚠️ Çavuş Bekleyenler"));
+                if (cboDurum != null)
+                {
+                    cboDurum.SelectedIndex = 2; // Çavuş Bekleyenler
+                    form.RefreshDataAsync().GetAwaiter().GetResult();
+                    for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                    using (var bmpBekleyen = new Bitmap(form.Width, form.Height))
+                    {
+                        form.DrawToBitmap(bmpBekleyen, new Rectangle(0, 0, form.Width, form.Height));
+                        bmpBekleyen.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\cavus_servis_bekleyenler_ekrani.png");
+                    }
+                }
+                form.Close();
+
+                // 3. Sample Match & Dialog Snapshot
+                var sampleEslesme = new CavusKantarEslesmeDto
+                {
+                    IdNo = 18450,
+                    GirisKodu = 14211,
+                    Tarih = DateTime.Today,
+                    GirisSaati = "20:38",
+                    Plaka = "31 GY 606",
+                    SoforAdi = "UMUT OKAYA",
+                    UrunAdi = "LİMON - ENTER",
+                    MustahsilAdi = "MELAGRO TARIM SANAYİ VE TİC. LTD. ŞTİ.",
+                    Bolge = "ADANA İÇİ",
+                    NetKg = 12401,
+                    CavusKodu = 35062,
+                    CavusAdi = "ENVER AYVAZ",
+                    ServisSayisi = 1,
+                    ServisFiyati = 3310,
+                    ServisTutari = 3310,
+                    ToplamNakliye = 14300,
+                    Onay = true,
+                    Aciklama = "Melagro narenciye hasadı 1. servis seferi mutabakatı"
+                };
+
+                var dlg = new CavusKantarEslesmeDialog(sampleEslesme);
+                dlg.StartPosition = FormStartPosition.Manual;
+                dlg.Location = new Point(100, 70);
+                dlg.Show();
+                for (int i = 0; i < 25; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(dlg.Width, dlg.Height))
+                {
+                    dlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, dlg.Width, dlg.Height));
+                    bmpDlg.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\cavus_servis_dialog_ekrani.png");
+                }
+                dlg.Close();
+
+                // 4. Sample A4 Vector Hakediş Tutanağı Snapshot
+                var sampleList = new List<CavusKantarEslesmeDto>
+                {
+                    sampleEslesme,
+                    new CavusKantarEslesmeDto
+                    {
+                        IdNo = 18449,
+                        GirisKodu = 14210,
+                        Tarih = DateTime.Today.AddDays(-1),
+                        GirisSaati = "20:35",
+                        Plaka = "31 SH 374",
+                        SoforAdi = "NAZIM TEMİZ",
+                        UrunAdi = "LİMON - ENTER",
+                        MustahsilAdi = "MELAGRO TARIM SANAYİ VE TİC. LTD. ŞTİ.",
+                        Bolge = "ADANA İÇİ",
+                        NetKg = 12121,
+                        CavusKodu = 35062,
+                        CavusAdi = "ENVER AYVAZ",
+                        ServisSayisi = 1,
+                        ServisFiyati = 3310,
+                        ServisTutari = 3310,
+                        ToplamNakliye = 14020,
+                        Onay = true
+                    },
+                    new CavusKantarEslesmeDto
+                    {
+                        IdNo = 18452,
+                        GirisKodu = 14213,
+                        Tarih = DateTime.Today.AddDays(-2),
+                        GirisSaati = "22:43",
+                        Plaka = "31 SY 720",
+                        SoforAdi = "MURAT AKÇAY",
+                        UrunAdi = "LİMON - VOLKA MARIA",
+                        MustahsilAdi = "HASAN KODAL",
+                        Bolge = "ADANA",
+                        NetKg = 11701,
+                        CavusKodu = 56776,
+                        CavusAdi = "SEFA KÜÇÜK",
+                        ServisSayisi = 1,
+                        ServisFiyati = 4500,
+                        ServisTutari = 4500,
+                        ToplamNakliye = 13600,
+                        Onay = true
+                    },
+                    new CavusKantarEslesmeDto
+                    {
+                        IdNo = 18448,
+                        GirisKodu = 14209,
+                        Tarih = DateTime.Today.AddDays(-2),
+                        GirisSaati = "20:32",
+                        Plaka = "31 AOT 430",
+                        SoforAdi = "KADİR TEMİZKAN",
+                        UrunAdi = "LİMON - ENTER",
+                        MustahsilAdi = "NURİ SERGEN BÜYÜKYEL",
+                        Bolge = "ADANA",
+                        NetKg = 10741,
+                        CavusKodu = 35099,
+                        CavusAdi = "HAYDAR ERTEM",
+                        ServisSayisi = 1,
+                        ServisFiyati = 3900,
+                        ServisTutari = 3900,
+                        ToplamNakliye = 12620,
+                        Onay = true
+                    },
+                    new CavusKantarEslesmeDto
+                    {
+                        IdNo = 18447,
+                        GirisKodu = 14208,
+                        Tarih = DateTime.Today.AddDays(-3),
+                        GirisSaati = "19:18",
+                        Plaka = "31 ZK 711",
+                        SoforAdi = "MEHMET EMİN TEMİZKAN",
+                        UrunAdi = "LİMON - ENTER",
+                        MustahsilAdi = "NURİ SERGEN BÜYÜKYEL",
+                        Bolge = "ADANA",
+                        NetKg = 10281,
+                        CavusKodu = 61234,
+                        CavusAdi = "ABDULHADİ ERTEM",
+                        ServisSayisi = 1,
+                        ServisFiyati = 3900,
+                        ServisTutari = 3900,
+                        ToplamNakliye = 12180,
+                        Onay = true
+                    }
+                };
+
+                using (var bmpA4 = CavusKantarReportRenderer.RenderToBitmap(sampleList, "ENVER AYVAZ", "ADANA BÖLGESİ", DateTime.Today.AddDays(-30), DateTime.Today, 1240, 1754))
+                {
+                    bmpA4.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\cavus_servis_a4_hakedis.png");
+                }
+
+                Console.WriteLine("CAVUS_SERVIS_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }

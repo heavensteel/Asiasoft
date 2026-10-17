@@ -406,6 +406,7 @@ public class MainForm : Form
         AddSidebarHeader(pnlNavList, "KANTAR & ÜRETİM", ref sy);
         AddSidebarButton(pnlNavList, "🚚  Yükleme Programı", ref sy, () => OpenModuleTab("YuklemeProgrami", "🚚 Yükleme Programı", () => new YuklemeProgramiForm()), isHighlighted: true);
         AddSidebarButton(pnlNavList, "📋  Amele Puantaj Defteri", ref sy, () => OpenModuleTab("Puantaj", "📋 Amele Puantaj Defteri", () => new PuantajForm()), isHighlighted: true);
+        AddSidebarButton(pnlNavList, "🤝  Çavuş & Servis Eşleme", ref sy, () => OpenModuleTab("CavusServis", "🤝 Çavuş & Servis Eşleme", () => new CavusKantarServisForm()), isHighlighted: true);
         AddSidebarButton(pnlNavList, "⚖️  Mal Kabul & Canlı Kantar", ref sy, () => OpenModuleTab("MalKabul", "⚖️ Mal Kabul & Kantar", () => new MalKabulForm()));
         AddSidebarButton(pnlNavList, "📋  Kantar / Tartı Fişleri", ref sy, () => OpenModuleTab("Kantar", "📋 Kantar Fişleri", () => new KantarForm()));
         AddSidebarButton(pnlNavList, "🧪  Etilen & Sarartma Odaları", ref sy, () => OpenModuleTab("Etilen", "🧪 Etilen & Sarartma", () => new EtilenStokTakipForm()));
