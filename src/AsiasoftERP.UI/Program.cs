@@ -638,6 +638,104 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-kasa-banka")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+
+                // 1. Capture KasaBankaYonetimForm Tab 0 (Finans Hareketleri & KPIs)
+                var formMain = new KasaBankaYonetimForm(0);
+                formMain.StartPosition = FormStartPosition.Manual;
+                formMain.Location = new Point(30, 30);
+                formMain.Size = new Size(1360, 780);
+                formMain.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpGenel = new Bitmap(formMain.Width, formMain.Height))
+                {
+                    formMain.DrawToBitmap(bmpGenel, new Rectangle(0, 0, formMain.Width, formMain.Height));
+                    bmpGenel.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\kasa_banka_genel_ekrani.png");
+                }
+                formMain.Close();
+
+                // 2. Capture KasaBankaYonetimForm Tab 1 (Kasa Kartları & Ekstre)
+                var formKasa = new KasaBankaYonetimForm(1);
+                formKasa.StartPosition = FormStartPosition.Manual;
+                formKasa.Location = new Point(30, 30);
+                formKasa.Size = new Size(1360, 780);
+                formKasa.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpKasa = new Bitmap(formKasa.Width, formKasa.Height))
+                {
+                    formKasa.DrawToBitmap(bmpKasa, new Rectangle(0, 0, formKasa.Width, formKasa.Height));
+                    bmpKasa.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\kasa_ekstre_ekrani.png");
+                }
+                formKasa.Close();
+
+                // 3. Capture KasaBankaYonetimForm Tab 2 (Banka Hesapları & Ekstre)
+                var formBanka = new KasaBankaYonetimForm(2);
+                formBanka.StartPosition = FormStartPosition.Manual;
+                formBanka.Location = new Point(30, 30);
+                formBanka.Size = new Size(1360, 780);
+                formBanka.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpBanka = new Bitmap(formBanka.Width, formBanka.Height))
+                {
+                    formBanka.DrawToBitmap(bmpBanka, new Rectangle(0, 0, formBanka.Width, formBanka.Height));
+                    bmpBanka.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\banka_ekstre_ekrani.png");
+                }
+                formBanka.Close();
+
+                // 4. Sample Voucher & Dialog Snapshot
+                var sampleFis = new FinansFisGirisDto
+                {
+                    FisNo = 982,
+                    MakbuzNo = 982,
+                    FisTar = DateTime.Today,
+                    Saat = DateTime.Now.TimeOfDay,
+                    IslemTipi = FinansIslemTipi.KasaTahsilat,
+                    KasaKodu = 4,
+                    KasaAdi = "MERKEZ KASA TL",
+                    FirKod = 30048,
+                    CariAdi = "SAVUKDURAN TARIM ÜRÜNLERİ LTD. ŞTİ.",
+                    VergiDairesi = "ANTAKYA V.D.",
+                    VergiNo = "7540291834",
+                    CariAdresi = "Karaali Mah. Antakya / HATAY",
+                    Tutar = 89800.00,
+                    DovizTuru = "TL",
+                    DovizKur = 1.0,
+                    BelgeNo = "THS-2026-004",
+                    Aciklama = "SÖZLEŞMELİ İŞÇİLİK VE NARENCİYE ALIM TAHSİLATI",
+                    YaziIle = "SeksenDokuzBinSekizYüz Türk Lirası",
+                    User = "Ali SARIGÜL"
+                };
+
+                // Capture KasaBankaFisDialog
+                var dlg = new KasaBankaFisDialog(sampleFis);
+                dlg.StartPosition = FormStartPosition.Manual;
+                dlg.Location = new Point(100, 70);
+                dlg.Show();
+                for (int i = 0; i < 25; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(dlg.Width, dlg.Height))
+                {
+                    dlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, dlg.Width, dlg.Height));
+                    bmpDlg.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\kasa_banka_fis_dialog_ekrani.png");
+                }
+                dlg.Close();
+
+                // 5. Render A4 Makbuz & Dekont High-Res Document
+                using (var bmpA4 = KasaBankaReportRenderer.RenderToBitmap(sampleFis, 1240, 1754))
+                {
+                    bmpA4.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\kasa_banka_a4_makbuz.png");
+                }
+
+                Console.WriteLine("KASA_BANKA_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }

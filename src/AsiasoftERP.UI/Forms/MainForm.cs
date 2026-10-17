@@ -429,9 +429,10 @@ public class MainForm : Form
 
         // 6. FİNANS & BANKA
         AddSidebarHeader(pnlNavList, "FİNANS & BANKA", ref sy);
+        AddSidebarButton(pnlNavList, "💰  Kasa & Banka Yönetimi", ref sy, () => OpenModuleTab("KasaBanka", "💰 Kasa & Banka", () => new KasaBankaYonetimForm(0)), isHighlighted: true);
+        AddSidebarButton(pnlNavList, "💵  Kasa Hesap Ekstresi", ref sy, () => OpenModuleTab("KasaEkstre", "💵 Kasa Ekstresi", () => new KasaBankaYonetimForm(1)));
+        AddSidebarButton(pnlNavList, "🏦  Banka Hesapları", ref sy, () => OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new KasaBankaYonetimForm(2)));
         AddSidebarButton(pnlNavList, "💳  Ödeme Talep İşlemleri", ref sy, () => OpenModuleTab("OdemeTalep", "💳 Ödeme Talepleri", () => new OdemeTalepIslemleriForm()));
-        AddSidebarButton(pnlNavList, "💰  Kasa Hesap Ekstresi", ref sy, () => OpenModuleTab("KasaEkstre", "💰 Kasa Ekstresi", () => new KasaEkstreForm()));
-        AddSidebarButton(pnlNavList, "🏦  Banka Hesapları", ref sy, () => OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new BankaHesapForm()));
         AddSidebarButton(pnlNavList, "📝  Çek & Senet Listesi", ref sy, () => OpenModuleTab("CekList", "📝 Çek Listesi", () => new CekListForm()));
 
         // 7. SİSTEM
@@ -659,11 +660,14 @@ public class MainForm : Form
             case "Mustahsil":
                 OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new OdemeMakbuzForm(MakbuzTip.MustahsilMakbuzu));
                 break;
+            case "KasaBanka":
+                OpenModuleTab("KasaBanka", "💰 Kasa & Banka", () => new KasaBankaYonetimForm(0));
+                break;
             case "KasaEkstre":
-                OpenModuleTab("KasaEkstre", "💰 Kasa Ekstresi", () => new KasaEkstreForm());
+                OpenModuleTab("KasaEkstre", "💵 Kasa Ekstresi", () => new KasaBankaYonetimForm(1));
                 break;
             case "BankaHesap":
-                OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new BankaHesapForm());
+                OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new KasaBankaYonetimForm(2));
                 break;
             case "CekList":
                 OpenModuleTab("CekList", "📝 Çek Listesi", () => new CekListForm());
