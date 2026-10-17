@@ -902,6 +902,132 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-bahce-yetki")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.SetAllowedModules(AppModuleRegistry.AllModules.Select(m => m.Key));
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+
+                // 1. Snapshot BahceKesimForm
+                var bahceForm = new BahceKesimForm();
+                bahceForm.StartPosition = FormStartPosition.Manual;
+                bahceForm.Location = new Point(0, 0);
+                bahceForm.Size = new Size(1400, 850);
+                bahceForm.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpMain = new Bitmap(bahceForm.Width, bahceForm.Height))
+                {
+                    bahceForm.DrawToBitmap(bmpMain, new Rectangle(0, 0, bahceForm.Width, bahceForm.Height));
+                    bmpMain.Save(Path.Combine(outDir, "bahce_kesim_genel_ekrani.png"));
+                }
+
+                // 2. Snapshot BahceKesimDialog
+                var srv = new BahceKesimService();
+                var sozlesmeler = srv.GetSozlesmelerAsync().GetAwaiter().GetResult();
+                var firstSoz = sozlesmeler.FirstOrDefault() ?? new BahceSozlesmeDto
+                {
+                    SozlesmeNo = 1205,
+                    Tarih = DateTime.Today.AddDays(-15),
+                    FirKod = 120010042,
+                    FirmaAdi = "HÜSEYİN AVNİ BÜYÜKYEL",
+                    BolgeAdi = "ADANA / YÜREĞİR",
+                    MalAdi = "LİMON - ENTER",
+                    SozlesmeTuru = "TONAJ",
+                    HedefKg = 180000,
+                    Fiyat = 14.50,
+                    SozlesmeTutari = 2610000,
+                    Ada = "142",
+                    Parsel = "18",
+                    Mevki = "KADIKÖY MEVKİİ",
+                    Durumu = "Aktif"
+                };
+
+                var editDlg = new BahceSozlesmeEditDialog(firstSoz);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(150, 100);
+                editDlg.Show();
+                for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpDlg.Save(Path.Combine(outDir, "bahce_kesim_dialog_ekrani.png"));
+                }
+                editDlg.Close();
+                bahceForm.Close();
+
+                // 3. Snapshot BahceSozlesme A4 Report
+                var sampleSeferler = new List<BahceKesimSeferDto>
+                {
+                    new() { IdNo = 18450, Tarih = DateTime.Today.AddDays(-1), Plaka = "31 KET 44", NetKg = 11450, MalTutari = 166025, YevmiyeTutari = 18000, ServisTutari = 4500, GenelToplam = 188525, KgMaliyet = 16.46, KesimCavusu = "ENVER AYVAZ", Sofor = "AHMET YILMAZ", MalAdi = "LİMON - ENTER" },
+                    new() { IdNo = 18448, Tarih = DateTime.Today.AddDays(-2), Plaka = "31 AOT 430", NetKg = 10741, MalTutari = 155744, YevmiyeTutari = 16000, ServisTutari = 3900, GenelToplam = 175644, KgMaliyet = 16.35, KesimCavusu = "HAYDAR ERTEM", Sofor = "KADİR TEMİZKAN", MalAdi = "LİMON - ENTER" },
+                    new() { IdNo = 18447, Tarih = DateTime.Today.AddDays(-3), Plaka = "31 ZK 711", NetKg = 10281, MalTutari = 149074, YevmiyeTutari = 15000, ServisTutari = 3900, GenelToplam = 167974, KgMaliyet = 16.34, KesimCavusu = "ABDULHADİ ERTEM", Sofor = "MEHMET EMİN TEMİZKAN", MalAdi = "LİMON - ENTER" }
+                };
+
+                firstSoz.GerceklesenKg = 32472;
+                firstSoz.GerceklesenMaliyet = 532143;
+                firstSoz.SeferSayisi = 3;
+
+                using (var bmpA4 = BahceSozlesmeReportRenderer.RenderToBitmap(firstSoz, sampleSeferler, 1240, 1754))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "bahce_sozlesme_a4_rapor.png"));
+                }
+
+                // 4. Snapshot UserPermissionsDialog
+                var permDlg = new UserPermissionsDialog("100");
+                permDlg.StartPosition = FormStartPosition.Manual;
+                permDlg.Location = new Point(200, 80);
+                permDlg.Show();
+                for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpPerm = new Bitmap(permDlg.Width, permDlg.Height))
+                {
+                    permDlg.DrawToBitmap(bmpPerm, new Rectangle(0, 0, permDlg.Width, permDlg.Height));
+                    bmpPerm.Save(Path.Combine(outDir, "modul_yetkilendirme_dialog_ekrani.png"));
+                }
+                permDlg.Close();
+
+                // 5. Snapshot Restricted User Sidebar in MainForm
+                // Save explicit restricted permissions for user 100 into MariaDB to test actual DB persistence
+                var permService = new PermissionService();
+                var restrictedDict = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                foreach (var m in AppModuleRegistry.AllModules)
+                {
+                    restrictedDict[m.Key] = (m.Key == "YuklemeProgrami" || m.Key == "CavusServis" || m.Key == "Puantaj");
+                }
+                permService.SaveUserPermissionsAsync("100", "Ali SARIGÜL", restrictedDict).GetAwaiter().GetResult();
+
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = false, Yetki = "S" };
+                AppState.LoadPermissionsAsync().GetAwaiter().GetResult();
+
+                var mainRestricted = new MainForm();
+                mainRestricted.StartPosition = FormStartPosition.Manual;
+                mainRestricted.Location = new Point(0, 0);
+                mainRestricted.Size = new Size(1350, 820);
+                mainRestricted.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpMainR = new Bitmap(mainRestricted.Width, mainRestricted.Height))
+                {
+                    mainRestricted.DrawToBitmap(bmpMainR, new Rectangle(0, 0, mainRestricted.Width, mainRestricted.Height));
+                    bmpMainR.Save(Path.Combine(outDir, "kisitli_kullanici_sidebar_ekrani.png"));
+                }
+                mainRestricted.Close();
+
+                // Clean up user 100 back to full admin permissions for development
+                var fullDict = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                foreach (var m in AppModuleRegistry.AllModules) fullDict[m.Key] = true;
+                permService.SaveUserPermissionsAsync("100", "Ali SARIGÜL", fullDict).GetAwaiter().GetResult();
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.LoadPermissionsAsync().GetAwaiter().GetResult();
+
+                Console.WriteLine("BAHCE_YETKI_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }

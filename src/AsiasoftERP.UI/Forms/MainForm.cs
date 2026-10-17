@@ -17,6 +17,7 @@ public class MainForm : Form
     private Panel _pnlTopBar = null!;
     private Panel _pnlBody = null!;
     private Panel _pnlSidebar = null!;
+    private Panel _pnlNavList = null!;
     private Panel _pnlMainContent = null!;
     private TabControl _tabControl = null!;
     private StatusStrip _statusStrip = null!;
@@ -109,6 +110,12 @@ public class MainForm : Form
                 this.BeginInvoke(new Action(() => { if (!string.IsNullOrEmpty(moduleKey)) OnDashboardModuleRequested(moduleKey); }));
             else
                 if (!string.IsNullOrEmpty(moduleKey)) OnDashboardModuleRequested(moduleKey);
+        };
+
+        this.Load += async (_, _) =>
+        {
+            await AppState.LoadPermissionsAsync();
+            RebuildSidebarNavigation();
         };
     }
 
@@ -281,6 +288,7 @@ public class MainForm : Form
             TextAlign = ContentAlignment.MiddleCenter,
             Cursor = Cursors.Hand
         };
+        _lblUserPill.Click += (_, _) => OpenUserPermissionsDialog();
         rx += 172;
 
         // Notification Bell Button
@@ -364,6 +372,8 @@ public class MainForm : Form
         catch { }
     }
 
+    private record NavItem(string Key, string Title, Action OnClick, bool IsHighlighted = false);
+
     private void BuildSidebar()
     {
         _pnlSidebar = new Panel
@@ -381,7 +391,7 @@ public class MainForm : Form
             e.Graphics.DrawLine(pen, _pnlSidebar.Width - 1, 0, _pnlSidebar.Width - 1, _pnlSidebar.Height);
         };
 
-        var pnlNavList = new Panel
+        _pnlNavList = new Panel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
@@ -389,63 +399,100 @@ public class MainForm : Form
             Padding = new Padding(8, 10, 8, 20)
         };
 
+        _pnlSidebar.Controls.Add(_pnlNavList);
+        RebuildSidebarNavigation();
+    }
+
+    public void RebuildSidebarNavigation()
+    {
+        _pnlNavList.Controls.Clear();
+        _sidebarButtons.Clear();
+        _activeSidebarBtn = null;
         int sy = 0;
 
-        // 1. GENEL
-        AddSidebarHeader(pnlNavList, "GENEL", ref sy);
-        var btnHome = AddSidebarButton(pnlNavList, "🏠  Genel Bakış", ref sy, () => _tabControl.SelectedIndex = 0, isHome: true);
+        // 1. GENEL (Always visible)
+        AddSidebarHeader(_pnlNavList, "GENEL", ref sy);
+        var btnHome = AddSidebarButton(_pnlNavList, "🏠  Genel Bakış", ref sy, () => _tabControl.SelectedIndex = 0, isHome: true);
         _activeSidebarBtn = btnHome;
 
+        // Dynamic category builder: only renders header if at least one item is permitted
+        void AddGroupIfAllowed(string groupTitle, List<NavItem> items)
+        {
+            var allowed = items.Where(i => AppState.CanView(i.Key)).ToList();
+            if (allowed.Count == 0) return;
+
+            AddSidebarHeader(_pnlNavList, groupTitle, ref sy);
+            foreach (var itm in allowed)
+            {
+                AddSidebarButton(_pnlNavList, itm.Title, ref sy, itm.OnClick, itm.IsHighlighted);
+            }
+        }
+
         // 2. CARİ YÖNETİMİ
-        AddSidebarHeader(pnlNavList, "CARİ & MÜŞTERİ", ref sy);
-        AddSidebarButton(pnlNavList, "⚡  Cari Hesap Ekstresi", ref sy, () => OpenModuleTab("CariEkstre", "⚡ Cari Hesap Ekstresi", () => new CariHesapEkstresiForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "👥  Cari Kartları (17.3K)", ref sy, () => OpenModuleTab("CariKartlar", "👥 Cari Hesaplar", () => new CariHesaplarForm()));
-        AddSidebarButton(pnlNavList, "⚖️  Borç / Alacak Listesi", ref sy, () => OpenModuleTab("CariBakiye", "⚖️ Borç / Alacak Listesi", () => new CariBakiyeForm()));
+        AddGroupIfAllowed("CARİ & MÜŞTERİ", new List<NavItem>
+        {
+            new("CariEkstre", "⚡  Cari Hesap Ekstresi", () => OpenModuleTab("CariEkstre", "⚡ Cari Hesap Ekstresi", () => new CariHesapEkstresiForm()), true),
+            new("CariKartlar", "👥  Cari Kartları (17.3K)", () => OpenModuleTab("CariKartlar", "👥 Cari Hesaplar", () => new CariHesaplarForm())),
+            new("CariBakiye", "⚖️  Borç / Alacak Listesi", () => OpenModuleTab("CariBakiye", "⚖️ Borç / Alacak Listesi", () => new CariBakiyeForm()))
+        });
 
         // 3. TARTI & ÜRETİM
-        AddSidebarHeader(pnlNavList, "KANTAR & ÜRETİM", ref sy);
-        AddSidebarButton(pnlNavList, "🚚  Yükleme Programı", ref sy, () => OpenModuleTab("YuklemeProgrami", "🚚 Yükleme Programı", () => new YuklemeProgramiForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "📋  Amele Puantaj Defteri", ref sy, () => OpenModuleTab("Puantaj", "📋 Amele Puantaj Defteri", () => new PuantajForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "🤝  Çavuş & Servis Eşleme", ref sy, () => OpenModuleTab("CavusServis", "🤝 Çavuş & Servis Eşleme", () => new CavusKantarServisForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "⚖️  Mal Kabul & Canlı Kantar", ref sy, () => OpenModuleTab("MalKabul", "⚖️ Mal Kabul & Kantar", () => new MalKabulForm()));
-        AddSidebarButton(pnlNavList, "📋  Kantar / Tartı Fişleri", ref sy, () => OpenModuleTab("Kantar", "📋 Kantar Fişleri", () => new KantarForm()));
-        AddSidebarButton(pnlNavList, "🧪  Etilen & Sarartma Odaları", ref sy, () => OpenModuleTab("Etilen", "🧪 Etilen & Sarartma", () => new EtilenStokTakipForm()));
-        AddSidebarButton(pnlNavList, "🏭  Paketleme & Tartım", ref sy, () => OpenModuleTab("Paketleme", "🏭 Paketleme & Üretim", () => new PaketlemeForm()));
-        AddSidebarButton(pnlNavList, "🌳  Bahçe Kesim & Sözleşme", ref sy, () => OpenModuleTab("BahceKesim", "🌳 Bahçe Kesim & Alım", () => new BahceKesimForm()));
+        AddGroupIfAllowed("KANTAR & ÜRETİM", new List<NavItem>
+        {
+            new("YuklemeProgrami", "🚚  Yükleme Programı", () => OpenModuleTab("YuklemeProgrami", "🚚 Yükleme Programı", () => new YuklemeProgramiForm()), true),
+            new("Puantaj", "📋  Amele Puantaj Defteri", () => OpenModuleTab("Puantaj", "📋 Amele Puantaj Defteri", () => new PuantajForm()), true),
+            new("CavusServis", "🤝  Çavuş & Servis Eşleme", () => OpenModuleTab("CavusServis", "🤝 Çavuş & Servis Eşleme", () => new CavusKantarServisForm()), true),
+            new("MalKabul", "⚖️  Mal Kabul & Canlı Kantar", () => OpenModuleTab("MalKabul", "⚖️ Mal Kabul & Kantar", () => new MalKabulForm())),
+            new("Kantar", "📋  Kantar / Tartı Fişleri", () => OpenModuleTab("Kantar", "📋 Kantar Fişleri", () => new KantarForm())),
+            new("Etilen", "🧪  Etilen & Sarartma Odaları", () => OpenModuleTab("Etilen", "🧪 Etilen & Sarartma", () => new EtilenStokTakipForm())),
+            new("Paketleme", "🏭  Paketleme & Tartım", () => OpenModuleTab("Paketleme", "🏭 Paketleme & Üretim", () => new PaketlemeForm())),
+            new("BahceKesim", "🌳  Bahçe Kesim & Sözleşme", () => OpenModuleTab("BahceKesim", "🌳 Bahçe Kesim & Alım", () => new BahceKesimForm()))
+        });
 
         // 4. STOK & DEPO
-        AddSidebarHeader(pnlNavList, "STOK & DEPO", ref sy);
-        AddSidebarButton(pnlNavList, "📦  Stok Kartları", ref sy, () => OpenModuleTab("StokList", "📦 Stok Kartları", () => new StokListForm()));
-        AddSidebarButton(pnlNavList, "🔄  Stok Hareketleri", ref sy, () => OpenModuleTab("StokHareket", "🔄 Stok Hareketleri", () => new StokHareketForm()));
-        AddSidebarButton(pnlNavList, "📊  Stok Kartı Ekstresi", ref sy, () => OpenModuleTab("StokEkstre", "📊 Stok Ekstresi", () => new StokEkstreForm()));
+        AddGroupIfAllowed("STOK & DEPO", new List<NavItem>
+        {
+            new("StokList", "📦  Stok Kartları", () => OpenModuleTab("StokList", "📦 Stok Kartları", () => new StokListForm())),
+            new("StokHareket", "🔄  Stok Hareretleri", () => OpenModuleTab("StokHareket", "🔄 Stok Hareketleri", () => new StokHareketForm())),
+            new("StokEkstre", "📊  Stok Kartı Ekstresi", () => OpenModuleTab("StokEkstre", "📊 Stok Ekstresi", () => new StokEkstreForm()))
+        });
 
         // 5. TİCARİ & FATURA
-        AddSidebarHeader(pnlNavList, "TİCARİ & FATURA", ref sy);
-        AddSidebarButton(pnlNavList, "🚚  Satış İrsaliyeleri", ref sy, () => OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "📥  Alış İrsaliyeleri", ref sy, () => OpenModuleTab("AlisIrsaliye", "📥 Alış İrsaliyeleri", () => new AlisIrsaliyeForm()), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "📄  Satış Faturaları", ref sy, () => OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi)));
-        AddSidebarButton(pnlNavList, "📥  Alış Faturaları", ref sy, () => OpenModuleTab("AlisFatura", "📥 Alış Faturaları", () => new FaturalarForm(FaturaTip.AlisFaturasi)));
-        AddSidebarButton(pnlNavList, "🌐  İhracat Faturaları", ref sy, () => OpenModuleTab("IhracatFatura", "🌐 İhracat Faturaları", () => new FaturalarForm(FaturaTip.IhracatFaturasi)));
-        AddSidebarButton(pnlNavList, "🌾  Müstahsil Makbuzları", ref sy, () => OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new OdemeMakbuzForm(MakbuzTip.MustahsilMakbuzu)));
+        AddGroupIfAllowed("TİCARİ & FATURA", new List<NavItem>
+        {
+            new("SatisIrsaliye", "🚚  Satış İrsaliyeleri", () => OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm()), true),
+            new("AlisIrsaliye", "📥  Alış İrsaliyeleri", () => OpenModuleTab("AlisIrsaliye", "📥 Alış İrsaliyeleri", () => new AlisIrsaliyeForm()), true),
+            new("SatisFatura", "📄  Satış Faturaları", () => OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi))),
+            new("AlisFatura", "📥  Alış Faturaları", () => OpenModuleTab("AlisFatura", "📥 Alış Faturaları", () => new FaturalarForm(FaturaTip.AlisFaturasi))),
+            new("IhracatFatura", "🌐  İhracat Faturaları", () => OpenModuleTab("IhracatFatura", "🌐 İhracat Faturaları", () => new FaturalarForm(FaturaTip.IhracatFaturasi))),
+            new("Mustahsil", "🌾  Müstahsil Makbuzları", () => OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new OdemeMakbuzForm(MakbuzTip.MustahsilMakbuzu)))
+        });
 
         // 6. FİNANS & BANKA
-        AddSidebarHeader(pnlNavList, "FİNANS & BANKA", ref sy);
-        AddSidebarButton(pnlNavList, "💰  Kasa & Banka Yönetimi", ref sy, () => OpenModuleTab("KasaBanka", "💰 Kasa & Banka", () => new KasaBankaYonetimForm(0)), isHighlighted: true);
-        AddSidebarButton(pnlNavList, "💵  Kasa Hesap Ekstresi", ref sy, () => OpenModuleTab("KasaEkstre", "💵 Kasa Ekstresi", () => new KasaBankaYonetimForm(1)));
-        AddSidebarButton(pnlNavList, "🏦  Banka Hesapları", ref sy, () => OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new KasaBankaYonetimForm(2)));
-        AddSidebarButton(pnlNavList, "💳  Ödeme Talep İşlemleri", ref sy, () => OpenModuleTab("OdemeTalep", "💳 Ödeme Talepleri", () => new OdemeTalepIslemleriForm()));
-        AddSidebarButton(pnlNavList, "📝  Çek & Senet Listesi", ref sy, () => OpenModuleTab("CekList", "📝 Çek Listesi", () => new CekListForm()));
+        AddGroupIfAllowed("FİNANS & BANKA", new List<NavItem>
+        {
+            new("KasaBanka", "💰  Kasa & Banka Yönetimi", () => OpenModuleTab("KasaBanka", "💰 Kasa & Banka", () => new KasaBankaYonetimForm(0)), true),
+            new("KasaEkstre", "💵  Kasa Hesap Ekstresi", () => OpenModuleTab("KasaEkstre", "💵 Kasa Ekstresi", () => new KasaBankaYonetimForm(1))),
+            new("BankaHesap", "🏦  Banka Hesapları", () => OpenModuleTab("BankaHesap", "🏦 Banka Hesapları", () => new KasaBankaYonetimForm(2))),
+            new("OdemeTalep", "💳  Ödeme Talep İşlemleri", () => OpenModuleTab("OdemeTalep", "💳 Ödeme Talepleri", () => new OdemeTalepIslemleriForm())),
+            new("CekList", "📝  Çek & Senet Listesi", () => OpenModuleTab("CekList", "📝 Çek Listesi", () => new CekListForm()))
+        });
 
         // 7. SİSTEM
-        AddSidebarHeader(pnlNavList, "SİSTEM", ref sy);
-        if (AppState.IsAdmin)
+        AddSidebarHeader(_pnlNavList, "SİSTEM", ref sy);
+        if (AppState.CanView("ModulYetki") || AppState.IsAdmin)
         {
-            AddSidebarButton(pnlNavList, "👑  Kullanıcı Yönetimi", ref sy, () => OpenModuleTab("UserMgmt", "👑 Kullanıcı Yönetimi", () => new UserManagementForm()));
-            AddSidebarButton(pnlNavList, "🛡️  Giriş & Güvenlik Logları", ref sy, () => OpenModuleTab("LoginLogs", "🛡️ Giriş Logları", () => new UserLoginLogsForm()));
+            AddSidebarButton(_pnlNavList, "🔐  Modül Yetkilendirme", ref sy, OpenUserPermissionsDialog, isHighlighted: true);
         }
-        AddSidebarButton(pnlNavList, "🚪  Oturumu Kapat", ref sy, DoLogout);
-
-        _pnlSidebar.Controls.Add(pnlNavList);
+        if (AppState.CanView("UserMgmt") && AppState.IsAdmin)
+        {
+            AddSidebarButton(_pnlNavList, "👑  Kullanıcı Yönetimi", ref sy, () => OpenModuleTab("UserMgmt", "👑 Kullanıcı Yönetimi", () => new UserManagementForm()));
+        }
+        if (AppState.CanView("LoginLogs") && AppState.IsAdmin)
+        {
+            AddSidebarButton(_pnlNavList, "🛡️  Giriş & Güvenlik Logları", ref sy, () => OpenModuleTab("LoginLogs", "🛡️ Giriş Logları", () => new UserLoginLogsForm()));
+        }
+        AddSidebarButton(_pnlNavList, "🚪  Oturumu Kapat", ref sy, DoLogout);
     }
 
     private void AddSidebarHeader(Panel parent, string title, ref int y)
@@ -673,6 +720,12 @@ public class MainForm : Form
             case "CekList":
                 OpenModuleTab("CekList", "📝 Çek Listesi", () => new CekListForm());
                 break;
+            case "CavusServis":
+                OpenModuleTab("CavusServis", "🤝 Çavuş & Servis Eşleme", () => new CavusKantarServisForm());
+                break;
+            case "ModulYetki":
+                OpenUserPermissionsDialog();
+                break;
             case "UserMgmt":
                 if (AppState.IsAdmin) OpenModuleTab("UserMgmt", "👑 Kullanıcı Yönetimi", () => new UserManagementForm());
                 break;
@@ -680,6 +733,15 @@ public class MainForm : Form
                 if (AppState.IsAdmin) OpenModuleTab("LoginLogs", "🛡️ Giriş Logları", () => new UserLoginLogsForm());
                 break;
         }
+    }
+
+    public void OpenUserPermissionsDialog()
+    {
+        using var dlg = new UserPermissionsDialog(AppState.CurrentUserCode, () =>
+        {
+            RebuildSidebarNavigation();
+        });
+        dlg.ShowDialog(this);
     }
 
     public void OpenModuleTab(string tabKey, string tabTitle, Func<Form> formFactory)

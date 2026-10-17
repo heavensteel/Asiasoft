@@ -96,7 +96,11 @@ public class UserManagementForm : Form
         };
         x += 132;
 
-        _pnlToolbar.Controls.AddRange(new Control[] { _btnNew, _btnEdit, _btnPassword, _btnToggleStatus, _btnDelete, _btnRefresh, btnLogs });
+        var btnPerms = CreateToolButton("🔐 Modül Yetkileri", Color.FromArgb(13, 148, 136), Color.FromArgb(240, 253, 250), Color.FromArgb(153, 246, 228), x, 145);
+        btnPerms.Click += (_, _) => OpenUserPermissions();
+        x += 152;
+
+        _pnlToolbar.Controls.AddRange(new Control[] { _btnNew, _btnEdit, _btnPassword, _btnToggleStatus, _btnDelete, _btnRefresh, btnLogs, btnPerms });
 
         // Right-aligned Filters and Search Box
         var pnlFilters = new Panel
@@ -235,6 +239,7 @@ public class UserManagementForm : Form
         // Context Menu
         var contextMenu = new ContextMenuStrip { Font = new Font("Segoe UI", 9f) };
         contextMenu.Items.Add("✏️ Düzenle", null, (_, _) => EditSelectedUser());
+        contextMenu.Items.Add("🔐 Modül Yetkilerini Yönet", null, (_, _) => OpenUserPermissions());
         contextMenu.Items.Add("🔑 Şifre Değiştir", null, async (_, _) => await OpenPasswordDialogAsync());
         contextMenu.Items.Add("⊘ Aktif / Pasif Yap", null, async (_, _) => await ToggleStatusAsync());
         contextMenu.Items.Add(new ToolStripSeparator());
@@ -527,6 +532,13 @@ public class UserManagementForm : Form
             return;
         }
         OpenUserDialog(user);
+    }
+
+    private void OpenUserPermissions()
+    {
+        var user = GetSelectedUser();
+        using var dlg = new UserPermissionsDialog(user?.Kodu);
+        dlg.ShowDialog(this);
     }
 
     private async Task OpenPasswordDialogAsync()

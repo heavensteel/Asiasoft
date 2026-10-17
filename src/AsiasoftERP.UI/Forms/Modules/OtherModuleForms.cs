@@ -734,56 +734,6 @@ public class PaketlemeForm : BaseListForm
     }
 }
 
-public class BahceKesimForm : BaseListForm
-{
-    protected override string ModuleName => "BahceKesim";
-    protected override string FormTitle => "🌳  Bahçe Kesim & Alım Sözleşmeleri";
-
-    public BahceKesimForm() { this.Name = "BahceKesimForm"; SetupColumns(); }
-
-    private void SetupColumns()
-    {
-        Grid.Columns.AddRange(
-            new DataGridViewTextBoxColumn { Name = "colSozlesme", DataPropertyName = "SOZLESMENO", HeaderText = "Sözleşme No", Width = 110 },
-            new DataGridViewTextBoxColumn { Name = "colTarih", DataPropertyName = "TARIH", HeaderText = "Tarih", Width = 90,
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "dd.MM.yyyy" } },
-            new DataGridViewTextBoxColumn { Name = "colMustahsil", DataPropertyName = "FIRMAADI", HeaderText = "Müstahsil / Bahçe Sahibi", Width = 260 },
-            new DataGridViewTextBoxColumn { Name = "colUrun", DataPropertyName = "MALADI", HeaderText = "Ürün / Çeşit", Width = 180 },
-            new DataGridViewTextBoxColumn { Name = "colFiyat", DataPropertyName = "FIYAT", HeaderText = "Birim Fiyat", Width = 100,
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight } },
-            new DataGridViewTextBoxColumn { Name = "colTonaj", DataPropertyName = "TAHMINITONAJ", HeaderText = "Tahmini Ton", Width = 100,
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight } }
-        );
-    }
-
-    protected override async Task LoadDataAsync()
-    {
-        try
-        {
-            using var conn = DbConnectionConfig.CreateConnection();
-            await conn.OpenAsync();
-            const string sql = @"
-                SELECT 
-                    COALESCE(SOZLESMENO, 0) as SOZLESMENO,
-                    TARIH,
-                    COALESCE(FIRMAADI, '') as FIRMAADI,
-                    COALESCE(MALADI, '') as MALADI,
-                    COALESCE(FIYAT, 0) as FIYAT,
-                    COALESCE(TAHMINITONAJ, 0) as TAHMINITONAJ
-                FROM sozlesme
-                ORDER BY TARIH DESC
-                LIMIT 200;";
-
-            var data = (await Dapper.SqlMapper.QueryAsync(conn, sql)).ToList();
-            Grid.DataSource = data;
-            UpdateRecordCount(data.Count);
-        }
-        catch (Exception ex)
-        {
-            LblRecordCount.Text = $"Sözleşme kayıtları: {ex.Message}";
-        }
-    }
-}
 
 public class KasaEkstreForm : BaseListForm
 {

@@ -477,6 +477,7 @@ public class LoginForm : Form
             AppState.CurrentSessionDbId = logId;
             AppState.ActiveCompany = comp;
             AppState.ActiveUser = user;
+            await AppState.LoadPermissionsAsync();
 
             this.Hide();
             var mainForm = new MainForm();

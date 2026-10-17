@@ -39,12 +39,58 @@ public static class AppState
         RememberMeToken = string.Empty;
         CurrentSessionDbId = null;
         CurrentRdpSession = null;
+        AllowedModules.Clear();
     }
 
     /// <summary>
-    /// Check if current user has permission for a specific action
+    /// Active authorized module keys for current session
     /// </summary>
-    public static bool CanEdit(string module) => true;
+    public static HashSet<string> AllowedModules { get; } = new(System.StringComparer.OrdinalIgnoreCase);
 
-    public static bool CanView(string module) => true;
+    /// <summary>
+    /// Loads permissions for active user from MariaDB
+    /// </summary>
+    public static async System.Threading.Tasks.Task LoadPermissionsAsync()
+    {
+        try
+        {
+            var srv = new AsiasoftERP.Data.Services.PermissionService();
+            var keys = await srv.GetAllowedModuleKeysAsync(CurrentUserCode, CurrentUserName, IsAdmin);
+            AllowedModules.Clear();
+            foreach (var k in keys) AllowedModules.Add(k);
+        }
+        catch
+        {
+            // Fallback: grant all standard modules if offline
+            foreach (var m in AsiasoftERP.Core.Models.AppModuleRegistry.AllModules)
+            {
+                AllowedModules.Add(m.Key);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Manually sets authorized modules (e.g. for testing role presets)
+    /// </summary>
+    public static void SetAllowedModules(System.Collections.Generic.IEnumerable<string> modules)
+    {
+        AllowedModules.Clear();
+        AllowedModules.Add("Home");
+        foreach (var m in modules) AllowedModules.Add(m);
+    }
+
+    /// <summary>
+    /// Check if current user has permission for a specific action or module
+    /// </summary>
+    public static bool CanEdit(string module) => CanView(module);
+
+    /// <summary>
+    /// Strict module visibility check: returns true only if the user is authorized for this module!
+    /// </summary>
+    public static bool CanView(string module)
+    {
+        if (string.Equals(module, "Home", System.StringComparison.OrdinalIgnoreCase)) return true;
+        if (AllowedModules.Count == 0) return true; // not yet loaded
+        return AllowedModules.Contains(module);
+    }
 }
