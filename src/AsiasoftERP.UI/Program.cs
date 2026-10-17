@@ -442,6 +442,109 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-satis-irsaliye")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+
+                var svc = new IrsaliyeService();
+
+                // 1. Capture SatisIrsaliyeForm (List Screen with Live MariaDB Data)
+                var formList = new SatisIrsaliyeForm();
+                formList.StartPosition = FormStartPosition.Manual;
+                formList.Location = new Point(30, 30);
+                formList.Size = new Size(1360, 780);
+                formList.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpList = new Bitmap(formList.Width, formList.Height))
+                {
+                    formList.DrawToBitmap(bmpList, new Rectangle(0, 0, formList.Width, formList.Height));
+                    bmpList.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\satis_irsaliye_liste_ekrani.png");
+                }
+                formList.Close();
+
+                // 2. Fetch a real waybill (e.g. FISNO 8948 or most recent)
+                var irsList = Task.Run(async () => await svc.GetSatisIrsaliyeleriAsync(DateTime.Today.AddDays(-120), DateTime.Today)).GetAwaiter().GetResult();
+                var sampleIrs = irsList.FirstOrDefault(x => x.FisNo == 8948) ?? irsList.FirstOrDefault();
+                if (sampleIrs == null)
+                {
+                    sampleIrs = new IrsaliyeStkDto
+                    {
+                        FisNo = 8950,
+                        IrsNo = 8950,
+                        FisTar = DateTime.Today,
+                        IrsTar = DateTime.Today,
+                        FirmaAdi = "SAVUKDURAN TARIM ÜRÜNLERİ LTD. ŞTİ.",
+                        FirKod = 30048,
+                        Plaka = "31 AVL 103",
+                        ArkaPlaka = "31 KAA 205",
+                        SoforAdi = "Süleyman",
+                        SoforSoyadi = "Bıyıklı",
+                        SoforTc = "34567891234",
+                        SoforTelefon = "0532 555 12 34",
+                        DepoAdi = "ANA DEPO",
+                        ToplamPalet = 4,
+                        ToplamKasa = 355,
+                        ToplamMiktar = 3602.24,
+                        FisTut = 86453.76,
+                        KdvTut = 864.54,
+                        GenTut = 87318.30
+                    };
+                }
+
+                var sampleLines = Task.Run(async () => await svc.GetIrsaliyeDetayAsync(sampleIrs.FisNo)).GetAwaiter().GetResult();
+                if (sampleLines.Count == 0)
+                {
+                    sampleLines = new List<IrsaliyeDetayStkDto>
+                    {
+                        new() { Sira = 1, MalKodu = "1817", MalAdi = "ELMA - GALA", Birimi = "KG", Palet = 1, Kasa = 85, Burut = 742, Dara = 52.06, Miktar = 689.94, Fiyati = 24.50, Kdv = 1, KdvTut = 169.04, Tutar = 16903.53, KunyeNo = "010-8948-1" },
+                        new() { Sira = 2, MalKodu = "1817", MalAdi = "ELMA - GALA", Birimi = "KG", Palet = 1, Kasa = 80, Burut = 1068, Dara = 62.61, Miktar = 1005.39, Fiyati = 24.50, Kdv = 1, KdvTut = 246.32, Tutar = 24632.06, KunyeNo = "010-8948-2" },
+                        new() { Sira = 3, MalKodu = "1804", MalAdi = "MANDALİNA - PRIMASOL", Birimi = "KG", Palet = 1, Kasa = 110, Burut = 1193.5, Dara = 62.49, Miktar = 1131.01, Fiyati = 22.00, Kdv = 1, KdvTut = 248.82, Tutar = 24882.22, KunyeNo = "010-8948-3" },
+                        new() { Sira = 4, MalKodu = "2306", MalAdi = "NEKTARİN - SWET LEYDİ", Birimi = "KG", Palet = 1, Kasa = 80, Burut = 827, Dara = 50.16, Miktar = 776.84, Fiyati = 25.80, Kdv = 1, KdvTut = 200.42, Tutar = 20042.47, KunyeNo = "010-8948-4" }
+                    };
+                }
+
+                // 3. Render A4 Sevk İrsaliyesi High-Res Document
+                using (var bmpA4 = SatisIrsaliyeReportRenderer.RenderToBitmap(sampleIrs, sampleLines, 1240, 1754))
+                {
+                    bmpA4.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\satis_irsaliye_a4_baski.png");
+                }
+
+                // 4. Capture SatisIrsaliyeEditDialog
+                var editDlg = new SatisIrsaliyeEditDialog(sampleIrs);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(40, 40);
+                editDlg.Size = new Size(1340, 840);
+                editDlg.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpEdit = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpEdit, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpEdit.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\satis_irsaliye_duzenle_ekrani.png");
+                }
+                editDlg.Close();
+
+                // 5. Capture StokRehberForm
+                var stokDlg = new StokRehberForm();
+                stokDlg.StartPosition = FormStartPosition.Manual;
+                stokDlg.Location = new Point(120, 90);
+                stokDlg.Size = new Size(950, 600);
+                stokDlg.Show();
+                for (int i = 0; i < 25; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpStok = new Bitmap(stokDlg.Width, stokDlg.Height))
+                {
+                    stokDlg.DrawToBitmap(bmpStok, new Rectangle(0, 0, stokDlg.Width, stokDlg.Height));
+                    bmpStok.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\stok_rehber_dialog_ekrani.png");
+                }
+                stokDlg.Close();
+
+                Console.WriteLine("SATIS_IRSALIYE_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }
