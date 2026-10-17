@@ -83,7 +83,9 @@ public class IrsaliyeStkDto
         ? $"Faturalandı (#{FatNo:N0})" 
         : "Açık İrsaliye (Bekliyor)";
 
-    public string FisTarFormatted => FisTar?.ToString("dd.MM.yyyy") ?? "";
+    public DateTime? BelgeTarihi => FisTar ?? IrsTar;
+    public string FisTarFormatted => BelgeTarihi?.ToString("dd.MM.yyyy") ?? "";
+    public string TarihFormatted => BelgeTarihi?.ToString("dd.MM.yyyy") ?? "";
     public string SevkSaatFormatted => Saat.HasValue ? Saat.Value.ToString(@"hh\:mm") : "00:00";
 }
 

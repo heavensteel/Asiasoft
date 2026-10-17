@@ -421,6 +421,7 @@ public class MainForm : Form
         // 5. TİCARİ & FATURA
         AddSidebarHeader(pnlNavList, "TİCARİ & FATURA", ref sy);
         AddSidebarButton(pnlNavList, "🚚  Satış İrsaliyeleri", ref sy, () => OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm()), isHighlighted: true);
+        AddSidebarButton(pnlNavList, "📥  Alış İrsaliyeleri", ref sy, () => OpenModuleTab("AlisIrsaliye", "📥 Alış İrsaliyeleri", () => new AlisIrsaliyeForm()), isHighlighted: true);
         AddSidebarButton(pnlNavList, "📄  Satış Faturaları", ref sy, () => OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi)));
         AddSidebarButton(pnlNavList, "📥  Alış Faturaları", ref sy, () => OpenModuleTab("AlisFatura", "📥 Alış Faturaları", () => new FaturalarForm(FaturaTip.AlisFaturasi)));
         AddSidebarButton(pnlNavList, "🌐  İhracat Faturaları", ref sy, () => OpenModuleTab("IhracatFatura", "🌐 İhracat Faturaları", () => new FaturalarForm(FaturaTip.IhracatFaturasi)));
@@ -642,6 +643,9 @@ public class MainForm : Form
                 break;
             case "SatisIrsaliye":
                 OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm());
+                break;
+            case "AlisIrsaliye":
+                OpenModuleTab("AlisIrsaliye", "📥 Alış İrsaliyeleri", () => new AlisIrsaliyeForm());
                 break;
             case "SatisFatura":
                 OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi));

@@ -106,6 +106,103 @@ public class IrsaliyeService
         return rows.ToList();
     }
 
+    public async Task<List<IrsaliyeStkDto>> GetAlisIrsaliyeleriAsync(
+        DateTime start, 
+        DateTime end, 
+        string search = "", 
+        string faturaDurumu = "Tümü", 
+        string sirkod = "1")
+    {
+        using var conn = DbConnectionConfig.CreateConnection();
+        await conn.OpenAsync();
+
+        string faturaCondition = faturaDurumu switch
+        {
+            "Açık İrsaliyeler" or "AcikIrsaliyeler" => "AND (FATNO IS NULL OR FATNO = 0)",
+            "Faturalananlar" or "Faturalandı" => "AND (FATNO > 0)",
+            _ => ""
+        };
+
+        string searchClause = "";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            searchClause = @" AND (
+                f.FIRMAADI LIKE @searchPattern OR 
+                COALESCE(f.GIBIRSNO, '') LIKE @searchPattern OR 
+                COALESCE(f.PLAKA, '') LIKE @searchPattern OR 
+                COALESCE(f.SOFORADI, '') LIKE @searchPattern OR 
+                CAST(f.FISNO AS CHAR) LIKE @searchPattern OR 
+                CAST(f.IRSNO AS CHAR) LIKE @searchPattern
+            )";
+        }
+
+        string sql = $@"
+            SELECT 
+                f.SIRANO as SiraNo,
+                COALESCE(f.SIRKOD, '1') as Sirkod,
+                COALESCE(f.FISTUR, 220) as FisTur,
+                COALESCE(f.FISNO, 0) as FisNo,
+                COALESCE(f.IRSNO, 0) as IrsNo,
+                COALESCE(f.GIBIRSNO, '') as GibIrsNo,
+                COALESCE(f.FISTAR, f.IRSTAR) as FisTar,
+                COALESCE(f.IRSTAR, f.FISTAR) as IrsTar,
+                f.SAAT as Saat,
+                COALESCE(f.FIRKOD, 0) as FirKod,
+                COALESCE(f.FIRMAADI, '') as FirmaAdi,
+                COALESCE(f.FIRMAADRESI, '') as FirmaAdresi,
+                COALESCE(f.VERGIDAIRESI, '') as VergiDairesi,
+                COALESCE(f.VERGINUMARASI, '') as VergiNumarasi,
+                COALESCE(f.SEHIR, '') as Sehir,
+                COALESCE(f.ILCE, '') as Ilce,
+                COALESCE(f.ULKE, 'TÜRKİYE') as Ulke,
+                COALESCE(f.PLAKA, '') as Plaka,
+                COALESCE(f.ARKAPLAKA, '') as ArkaPlaka,
+                COALESCE(f.SOFORADI, '') as SoforAdi,
+                COALESCE(f.SOFORSOYADI, '') as SoforSoyadi,
+                COALESCE(f.SOFORTC, '') as SoforTc,
+                COALESCE(f.SOFORTELEFON, '') as SoforTelefon,
+                COALESCE(f.TASIYICIFIRMA, '') as TasiyiciFirma,
+                COALESCE(f.TASIYICIFIRMA_VKN, '') as TasiyiciFirmaVkn,
+                COALESCE(f.DEPOKODU, 9) as DepoKodu,
+                COALESCE(f.DEPOADI, 'ANA DEPO') as DepoAdi,
+                COALESCE(f.ACIKLAMA, '') as Aciklama,
+                COALESCE(f.SIPARISNO, '') as SiparisNo,
+                COALESCE(NULLIF(f.TOPLAMPALET, 0), SUM(d.PALET), 0) as ToplamPalet,
+                COALESCE(NULLIF(f.TOPLAMKASA, 0), SUM(d.KASA), 0) as ToplamKasa,
+                COALESCE(NULLIF(f.TOPLAMMIKTAR, 0), SUM(d.MIKTAR), 0) as ToplamMiktar,
+                COALESCE(f.TOPLAMFIRE, 0) as ToplamFire,
+                COALESCE(NULLIF(f.FISTUT, 0), SUM(d.TUTAR), 0) as FisTut,
+                COALESCE(f.ISKTUT, 0) as IskTut,
+                COALESCE(NULLIF(f.KDVTUT, 0), SUM(d.KDVTUT), 0) as KdvTut,
+                COALESCE(NULLIF(f.GENTUT, 0), SUM(d.TUTAR) + SUM(d.KDVTUT), 0) as GenTut,
+                COALESCE(f.DOVIZTURU, 'TL') as DovizTuru,
+                COALESCE(f.DOVIZTUTAR, 0) as DovizTutar,
+                f.FATNO as FatNo,
+                COALESCE(f.KAPANDI, '') as Kapandi,
+                COALESCE(f.USER, '') as User
+            FROM irsstkfis f
+            LEFT JOIN irsstkdet d ON f.FISNO = d.FISNO AND f.FISTUR = d.FISTUR AND f.SIRKOD = d.SIRKOD
+            WHERE f.SIRKOD = @sirkod 
+              AND f.FISTUR = 220
+              AND COALESCE(f.FISTAR, f.IRSTAR) >= @start AND COALESCE(f.FISTAR, f.IRSTAR) <= @end
+              {faturaCondition}
+              {searchClause}
+            GROUP BY f.SIRANO
+            ORDER BY COALESCE(f.FISTAR, f.IRSTAR) DESC, f.FISNO DESC
+            LIMIT 1000;";
+
+        var prms = new
+        {
+            sirkod,
+            start = start.Date,
+            end = end.Date,
+            searchPattern = $"%{search.Trim()}%"
+        };
+
+        var rows = await conn.QueryAsync<IrsaliyeStkDto>(sql, prms);
+        return rows.ToList();
+    }
+
     public async Task<List<IrsaliyeDetayStkDto>> GetIrsaliyeDetayAsync(double fisNo, double fisTur = 222, string sirkod = "1")
     {
         using var conn = DbConnectionConfig.CreateConnection();
@@ -306,6 +403,17 @@ public class IrsaliyeService
             trans.Rollback();
             throw;
         }
+    }
+
+    public Task<double> SaveAlisIrsaliyesiAsync(IrsaliyeStkDto header, List<IrsaliyeDetayStkDto> lines)
+    {
+        header.FisTur = 220;
+        return SaveSatisIrsaliyesiAsync(header, lines);
+    }
+
+    public Task<double> SaveIrsaliyeAsync(IrsaliyeStkDto header, List<IrsaliyeDetayStkDto> lines)
+    {
+        return SaveSatisIrsaliyesiAsync(header, lines);
     }
 
     public async Task DeleteIrsaliyeAsync(double siraNo, double fisNo, double fisTur = 222, string sirkod = "1")

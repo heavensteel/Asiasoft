@@ -545,6 +545,99 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-alis-irsaliye")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+
+                var svc = new IrsaliyeService();
+
+                // 1. Capture AlisIrsaliyeForm (List Screen with Live MariaDB Data)
+                var formList = new AlisIrsaliyeForm();
+                formList.StartPosition = FormStartPosition.Manual;
+                formList.Location = new Point(30, 30);
+                formList.Size = new Size(1360, 780);
+                formList.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpList = new Bitmap(formList.Width, formList.Height))
+                {
+                    formList.DrawToBitmap(bmpList, new Rectangle(0, 0, formList.Width, formList.Height));
+                    bmpList.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\alis_irsaliye_liste_ekrani.png");
+                }
+                formList.Close();
+
+                // 2. Fetch a real Alış İrsaliyesi (e.g. FISNO 5608 or most recent with lines)
+                var irsList = Task.Run(async () => await svc.GetAlisIrsaliyeleriAsync(DateTime.Today.AddDays(-120), DateTime.Today)).GetAwaiter().GetResult();
+                var sampleIrs = irsList.FirstOrDefault(x => x.FisNo == 5608) ?? irsList.FirstOrDefault();
+                if (sampleIrs == null)
+                {
+                    sampleIrs = new IrsaliyeStkDto
+                    {
+                        FisNo = 5608,
+                        FisTur = 220,
+                        IrsNo = 2025000005079,
+                        GibIrsNo = "ABY2026000000058",
+                        FisTar = DateTime.Today,
+                        IrsTar = DateTime.Today,
+                        FirmaAdi = "AHMET BEYAN",
+                        FirKod = 61008,
+                        VergiDairesi = "ANTAKYA V.D.",
+                        VergiNumarasi = "1234567890",
+                        Plaka = "31 AHM 450",
+                        ArkaPlaka = "31 BB 920",
+                        SoforAdi = "Ahmet",
+                        SoforSoyadi = "Beyan",
+                        SoforTc = "28495018274",
+                        SoforTelefon = "0533 456 78 90",
+                        TasiyiciFirma = "ÖZ BEYAN LOJİSTİK LTD. ŞTİ.",
+                        DepoAdi = "AMBALAJ VE KASA DEPOSU",
+                        ToplamPalet = 0,
+                        ToplamKasa = 0,
+                        ToplamMiktar = 3660,
+                        FisTut = 69540,
+                        KdvTut = 13908,
+                        GenTut = 83448,
+                        FatNo = 14120782
+                    };
+                }
+
+                var sampleLines = Task.Run(async () => await svc.GetIrsaliyeDetayAsync(sampleIrs.FisNo, 220)).GetAwaiter().GetResult();
+                if (sampleLines.Count == 0)
+                {
+                    sampleLines = new List<IrsaliyeDetayStkDto>
+                    {
+                        new() { Sira = 1, FisTur = 220, MalKodu = "1410", MalAdi = "30*50*10 PLASTİK KASA MAVİ", Birimi = "ADET", Miktar = 3660, Fiyati = 19.00, Kdv = 20, KdvTut = 13908.00, Tutar = 69540.00, Aciklama = "Parti No: AB-2026-09" },
+                        new() { Sira = 2, FisTur = 220, MalKodu = "1111", MalAdi = "100*120 GEMİ PALETİ", Birimi = "ADET", Miktar = 250, Fiyati = 145.00, Kdv = 20, KdvTut = 7250.00, Tutar = 36250.00, Aciklama = "ISPM-15 Isıl İşlemli" },
+                        new() { Sira = 3, FisTur = 220, MalKodu = "1689", MalAdi = "100*120 PALET ŞAPKASI", Birimi = "ADET", Miktar = 500, Fiyati = 8.50, Kdv = 20, KdvTut = 850.00, Tutar = 4250.00, Aciklama = "Polietilen Şeffaf" }
+                    };
+                }
+
+                // 3. Render A4 Mal Kabul & Alış İrsaliyesi High-Res Document
+                using (var bmpA4 = AlisIrsaliyeReportRenderer.RenderToBitmap(sampleIrs, sampleLines, 1240, 1754))
+                {
+                    bmpA4.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\alis_irsaliye_a4_baski.png");
+                }
+
+                // 4. Capture AlisIrsaliyeEditDialog
+                var editDlg = new AlisIrsaliyeEditDialog(sampleIrs);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(40, 40);
+                editDlg.Size = new Size(1340, 840);
+                editDlg.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpEdit = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpEdit, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpEdit.Save(@"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57\alis_irsaliye_duzenle_ekrani.png");
+                }
+                editDlg.Close();
+
+                Console.WriteLine("ALIS_IRSALIYE_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }
