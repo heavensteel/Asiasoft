@@ -465,7 +465,7 @@ public class MainForm : Form
             new("SatisFatura", "📄  Satış Faturaları", () => OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi))),
             new("AlisFatura", "📥  Alış Faturaları", () => OpenModuleTab("AlisFatura", "📥 Alış Faturaları", () => new FaturalarForm(FaturaTip.AlisFaturasi))),
             new("IhracatFatura", "🌐  İhracat Faturaları", () => OpenModuleTab("IhracatFatura", "🌐 İhracat Faturaları", () => new FaturalarForm(FaturaTip.IhracatFaturasi))),
-            new("Mustahsil", "🌾  Müstahsil Makbuzları", () => OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new OdemeMakbuzForm(MakbuzTip.MustahsilMakbuzu)))
+            new("Mustahsil", "🌾  Müstahsil Makbuzları", () => OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new MustahsilMakbuzForm()), true)
         });
 
         // 6. FİNANS & BANKA
@@ -706,7 +706,7 @@ public class MainForm : Form
                 OpenModuleTab("IhracatFatura", "🌐 İhracat Faturaları", () => new FaturalarForm(FaturaTip.IhracatFaturasi));
                 break;
             case "Mustahsil":
-                OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new OdemeMakbuzForm(MakbuzTip.MustahsilMakbuzu));
+                OpenModuleTab("Mustahsil", "🌾 Müstahsil Makbuzları", () => new MustahsilMakbuzForm());
                 break;
             case "KasaBanka":
                 OpenModuleTab("KasaBanka", "💰 Kasa & Banka", () => new KasaBankaYonetimForm(0));

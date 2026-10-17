@@ -1028,6 +1028,87 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-mustahsil")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.SetAllowedModules(AppModuleRegistry.AllModules.Select(m => m.Key));
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+
+                var srv = new MustahsilMakbuzService();
+                srv.SeedInitialDataIfEmptyAsync().GetAwaiter().GetResult();
+
+                // 1. Snapshot MustahsilMakbuzForm
+                var mustahsilForm = new MustahsilMakbuzForm();
+                mustahsilForm.StartPosition = FormStartPosition.Manual;
+                mustahsilForm.Location = new Point(0, 0);
+                mustahsilForm.Size = new Size(1400, 850);
+                mustahsilForm.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpMain = new Bitmap(mustahsilForm.Width, mustahsilForm.Height))
+                {
+                    mustahsilForm.DrawToBitmap(bmpMain, new Rectangle(0, 0, mustahsilForm.Width, mustahsilForm.Height));
+                    bmpMain.Save(Path.Combine(outDir, "mustahsil_makbuz_genel_ekrani.png"));
+                }
+
+                // 2. Snapshot MustahsilMakbuzEditDialog
+                var makbuzlar = srv.GetMakbuzlarAsync(DateTime.Today.AddDays(-90), DateTime.Today).GetAwaiter().GetResult();
+                var firstMakbuz = makbuzlar.FirstOrDefault() ?? new MustahsilMakbuzDto
+                {
+                    MakbuzNo = "MM-2026-1001",
+                    Tarih = DateTime.Today.AddDays(-5),
+                    TcNo = "15685272376",
+                    AdiSoyadi = "ÖZCAN AĞAOĞLU",
+                    BabaAdi = "MEHMET",
+                    DogumTarihiYeri = "ANTAKYA / 1968",
+                    Adresi = "Havutlu Köyü Çiftlik No:12",
+                    Sehir = "ADANA",
+                    Ilece = "YÜREĞİR",
+                    Bolgesi = "ADANA / YÜREĞİR",
+                    BagkurNo = "1200016953",
+                    MalKodu = "1102",
+                    MalAdi = "LİMON - ENTER",
+                    KunyeNo = "HKS-031-20261001",
+                    Miktar = 18450,
+                    Fiyati = 15.50,
+                    Tutari = 285975.00,
+                    StopajOrani = 2.0,
+                    StopajTutari = 5719.50,
+                    BagkurOrani = 2.0,
+                    BagkurTutari = 5719.50,
+                    TicBorOrani = 0.2,
+                    TicBorTutari = 571.95,
+                    NetKesinti = 12010.95,
+                    Odenen = 273964.05,
+                    Yaziile = "YALNIZ İKİ YÜZ YETMİŞ ÜÇ BİN DOKUZ YÜZ ALTMIŞ DÖRT TÜRK LİRASI BEŞ KURUŞ"
+                };
+
+                var editDlg = new MustahsilMakbuzEditDialog(firstMakbuz);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(120, 80);
+                editDlg.Show();
+                for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpDlg.Save(Path.Combine(outDir, "mustahsil_makbuz_dialog_ekrani.png"));
+                }
+                editDlg.Close();
+                mustahsilForm.Close();
+
+                // 3. Snapshot MustahsilMakbuz A4 Report
+                using (var bmpA4 = MustahsilMakbuzReportRenderer.RenderToBitmap(firstMakbuz, 1240, 1754))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "mustahsil_makbuz_a4_baski.png"));
+                }
+
+                Console.WriteLine("MUSTAHSIL_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }
