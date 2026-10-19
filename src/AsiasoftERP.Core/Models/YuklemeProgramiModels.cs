@@ -14,6 +14,7 @@ public class YuklemeProgramiDto
     public int ToplamPalet { get; set; }
     public string Hazirlayan { get; set; } = "Ali SARIGÜL";
     public string Onaylayan { get; set; } = "İHRACAT BÖLÜMÜ";
+    public string ForkliftOperator { get; set; } = string.Empty;
     public string Durum { get; set; } = "Onaylandı";
     public string? Notlar { get; set; }
     public DateTime GuncellemeTarihi { get; set; } = DateTime.Now;
@@ -37,4 +38,24 @@ public class YuklemeSutunDto
     public string PartilerMetin { get; set; } = string.Empty;
     public string TarihlerMetin { get; set; } = string.Empty;
     public int ToplamPalet { get; set; }
+}
+
+/// <summary>
+/// Yükleme operasyonlarını yürüten fabrika/depo forklift operatörü
+/// </summary>
+public class ForkliftOperatorDto
+{
+    public int Id { get; set; }
+    public string AdSoyad { get; set; } = string.Empty;
+    public string Telefon { get; set; } = string.Empty;
+    public string EhliyetNo { get; set; } = string.Empty;
+    public string ForkliftKodu { get; set; } = string.Empty;
+    public string Vardiya { get; set; } = "1. Vardiya (Gündüz)";
+    public string Durum { get; set; } = "Aktif";
+    public string Aciklama { get; set; } = string.Empty;
+    public DateTime KayitTarihi { get; set; } = DateTime.Now;
+
+    public string DisplayText => string.IsNullOrWhiteSpace(ForkliftKodu)
+        ? AdSoyad
+        : $"{AdSoyad} ({ForkliftKodu})";
 }

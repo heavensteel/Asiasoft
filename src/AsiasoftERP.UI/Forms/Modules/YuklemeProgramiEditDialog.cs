@@ -25,6 +25,8 @@ public class YuklemeProgramiEditDialog : Form
     private ComboBox _cboGridDuzen = null!;
     private TextBox _txtHazirlayan = null!;
     private TextBox _txtOnaylayan = null!;
+    private ComboBox _cboForklift = null!;
+    private Button _btnManageForklift = null!;
     private ComboBox _cboDurum = null!;
     private Label _lblToplamPaletHero = null!;
 
@@ -416,7 +418,7 @@ public class YuklemeProgramiEditDialog : Form
         pnlHdr.Resize += (_, _) => RelayoutHeader();
         RelayoutHeader();
 
-        // Personel Strip (Hazırlayan, Onaylayan)
+        // Personel Strip (Hazırlayan, Forklift Operatörü, Onaylayan)
         var pnlPersonel = new Panel
         {
             Dock = DockStyle.Top,
@@ -432,26 +434,58 @@ public class YuklemeProgramiEditDialog : Form
         };
 
         var lblHaz = new Label { Text = "Hazırlayan:", Location = new Point(12, 8), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
-        _txtHazirlayan = new TextBox { Location = new Point(12, 26), Size = new Size(250, 24), Text = "Ali SARIGÜL" };
+        _txtHazirlayan = new TextBox { Location = new Point(12, 26), Size = new Size(180, 24), Text = "Ali SARIGÜL" };
         _txtHazirlayan.TextChanged += (_, _) => TriggerPreviewUpdate();
 
-        var lblOnay = new Label { Text = "Onaylayan Bölüm:", Location = new Point(280, 8), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
-        _txtOnaylayan = new TextBox { Location = new Point(280, 26), Size = new Size(250, 24), Text = "İHRACAT BÖLÜMÜ" };
+        var lblForklift = new Label { Text = "🚜 Forkliftçi / Yükleyen:", Location = new Point(204, 8), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = ModernColors.Slate800 };
+        _cboForklift = new ComboBox { Location = new Point(204, 26), Size = new Size(180, 24), DropDownStyle = ComboBoxStyle.DropDown };
+        _cboForklift.TextChanged += (_, _) => TriggerPreviewUpdate();
+        _cboForklift.SelectedIndexChanged += (_, _) => TriggerPreviewUpdate();
+
+        _btnManageForklift = new Button
+        {
+            Text = "⚙️",
+            Location = new Point(386, 25),
+            Size = new Size(28, 26),
+            BackColor = ModernColors.Slate100,
+            ForeColor = ModernColors.Slate700,
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand
+        };
+        _btnManageForklift.FlatAppearance.BorderColor = ModernColors.Slate300;
+        var ttFork = new ToolTip();
+        ttFork.SetToolTip(_btnManageForklift, "Forklift Operatörleri Tanım Rehberini Aç");
+        _btnManageForklift.Click += async (_, _) =>
+        {
+            using var dlg = new ForkliftOperatorTanimDialog();
+            dlg.ShowDialog(this);
+            await LoadForkliftOperatorsAsync(_cboForklift.Text);
+        };
+
+        var lblOnay = new Label { Text = "Onaylayan Bölüm:", Location = new Point(426, 8), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
+        _txtOnaylayan = new TextBox { Location = new Point(426, 26), Size = new Size(180, 24), Text = "İHRACAT BÖLÜMÜ" };
         _txtOnaylayan.TextChanged += (_, _) => TriggerPreviewUpdate();
 
         pnlPersonel.Resize += (_, _) =>
         {
-            int pw = (pnlPersonel.ClientSize.Width - 36) / 2;
-            if (pw > 100)
+            int totalAvail = pnlPersonel.ClientSize.Width - 60 - 32;
+            if (totalAvail > 180)
             {
+                int pw = totalAvail / 3;
                 _txtHazirlayan.Width = pw;
-                lblOnay.Location = new Point(_txtHazirlayan.Right + 12, 8);
-                _txtOnaylayan.Location = new Point(_txtHazirlayan.Right + 12, 26);
+
+                lblForklift.Location = new Point(_txtHazirlayan.Right + 12, 8);
+                _cboForklift.Location = new Point(_txtHazirlayan.Right + 12, 26);
+                _cboForklift.Width = pw - 34;
+                _btnManageForklift.Location = new Point(_cboForklift.Right + 4, 25);
+
+                lblOnay.Location = new Point(_btnManageForklift.Right + 12, 8);
+                _txtOnaylayan.Location = new Point(_btnManageForklift.Right + 12, 26);
                 _txtOnaylayan.Width = pw;
             }
         };
 
-        pnlPersonel.Controls.AddRange(new Control[] { lblHaz, _txtHazirlayan, lblOnay, _txtOnaylayan });
+        pnlPersonel.Controls.AddRange(new Control[] { lblHaz, _txtHazirlayan, lblForklift, _cboForklift, _btnManageForklift, lblOnay, _txtOnaylayan });
 
         // TabControl for Columns (1, 2, or 3)
         _tabSutunlar = new TabControl
@@ -645,6 +679,7 @@ public class YuklemeProgramiEditDialog : Form
         _txtHazirlayan.Text = _prog.Hazirlayan;
         _txtOnaylayan.Text = _prog.Onaylayan;
         _cboDurum.SelectedItem = _prog.Durum;
+        _ = LoadForkliftOperatorsAsync(_prog.ForkliftOperator);
 
         int satirlar = Math.Max(1, Math.Min(3, _prog.SatirSayisi));
         int sutunlar = Math.Max(1, Math.Min(3, _prog.SutunSayisi));
@@ -652,6 +687,32 @@ public class YuklemeProgramiEditDialog : Form
         SelectGridDuzen(satirlar, sutunlar);
         RebuildGridTabs(satirlar, sutunlar);
         TriggerPreviewUpdate();
+    }
+
+    private async Task LoadForkliftOperatorsAsync(string? selectText = null)
+    {
+        try
+        {
+            var list = await _service.GetForkliftOperatorlerAsync(onlyActive: true);
+            _cboForklift.Items.Clear();
+            _cboForklift.Items.Add("");
+            foreach (var op in list)
+            {
+                _cboForklift.Items.Add(op.DisplayText);
+            }
+            if (!string.IsNullOrWhiteSpace(selectText))
+            {
+                _cboForklift.Text = selectText;
+            }
+            else if (!string.IsNullOrWhiteSpace(_prog.ForkliftOperator))
+            {
+                _cboForklift.Text = _prog.ForkliftOperator;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Forklift] Load error: {ex.Message}");
+        }
     }
 
     private void SelectGridDuzen(int satirlar, int sutunlar)
@@ -985,6 +1046,7 @@ public class YuklemeProgramiEditDialog : Form
         _prog.SatirSayisi = satirlar;
         _prog.SutunSayisi = sutunlar;
         _prog.Hazirlayan = _txtHazirlayan.Text.Trim();
+        _prog.ForkliftOperator = _cboForklift.Text.Trim();
         _prog.Onaylayan = _txtOnaylayan.Text.Trim();
         _prog.Durum = _cboDurum.SelectedItem?.ToString() ?? "Onaylandı";
 

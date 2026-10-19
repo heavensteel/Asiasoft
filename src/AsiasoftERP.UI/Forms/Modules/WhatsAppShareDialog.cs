@@ -235,6 +235,7 @@ public class WhatsAppShareDialog : Form
         }
 
         flpRoles.Controls.Add(CreateRoleBtn("🚛 Şoför", "Şoför Numarası"));
+        flpRoles.Controls.Add(CreateRoleBtn("🚜 Forklift", "Forklift Operatörü"));
         flpRoles.Controls.Add(CreateRoleBtn("📦 İhracat Müşterisi", "Alıcı Numarası"));
         flpRoles.Controls.Add(CreateRoleBtn("🏢 Nakliye", "Nakliye Numarası"));
         flpRoles.Controls.Add(CreateRoleBtn("🏭 Şef", "İşletme Şefi"));
@@ -317,6 +318,10 @@ public class WhatsAppShareDialog : Form
         sb.AppendLine($"🎯 *Sevkiyat / Hedef:* {_prog.Baslik}");
         sb.AppendLine($"📦 *Toplam Palet:* {_prog.ToplamPalet} PLT ({_prog.SatirSayisi}x{_prog.SutunSayisi} Grid Mizanpaj)");
         sb.AppendLine($"👤 *Hazırlayan:* {_prog.Hazirlayan} | *Onaylayan:* {_prog.Onaylayan}");
+        if (!string.IsNullOrWhiteSpace(_prog.ForkliftOperator))
+        {
+            sb.AppendLine($"🚜 *Forklift Operatörü:* {_prog.ForkliftOperator}");
+        }
         sb.AppendLine($"📌 *Durum:* {_prog.Durum}");
         sb.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         sb.AppendLine("*BÖLÜM VE ALICI DETAYLARI:*");

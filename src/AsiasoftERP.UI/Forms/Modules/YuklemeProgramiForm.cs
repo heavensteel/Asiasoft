@@ -321,7 +321,27 @@ public class YuklemeProgramiForm : Form
         btnParams.FlatAppearance.BorderColor = ModernColors.Slate200;
         btnParams.Click += (_, _) => _gridManager.ShowParametersDialog();
 
-        // 6. Yenile
+        // 6. Forklift Operatörleri Tanım Rehberi
+        ax -= 135;
+        var btnForklift = new Button
+        {
+            Text = "🚜  Forkliftçiler",
+            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            ForeColor = ModernColors.Slate800,
+            BackColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Size = new Size(125, 34),
+            Location = new Point(ax, 6),
+            Cursor = Cursors.Hand
+        };
+        btnForklift.FlatAppearance.BorderColor = ModernColors.Slate200;
+        btnForklift.Click += (_, _) =>
+        {
+            using var dlg = new ForkliftOperatorTanimDialog();
+            dlg.ShowDialog(this);
+        };
+
+        // 7. Yenile
         ax -= 80;
         var btnRefresh = new Button
         {
@@ -337,7 +357,7 @@ public class YuklemeProgramiForm : Form
         btnRefresh.FlatAppearance.BorderSize = 0;
         btnRefresh.Click += async (_, _) => await RefreshDataAsync();
 
-        pnlActions.Controls.AddRange(new Control[] { btnNew, btnEdit, btnPrint, btnWhatsApp, btnClone, btnParams, btnRefresh });
+        pnlActions.Controls.AddRange(new Control[] { btnNew, btnEdit, btnPrint, btnWhatsApp, btnClone, btnParams, btnForklift, btnRefresh });
 
         pnl.Controls.AddRange(new Control[] { pnlSearch, pnlActions });
         return pnl;
@@ -402,13 +422,14 @@ public class YuklemeProgramiForm : Form
         _grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
 
         // Columns
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Program No", DataPropertyName = "ProgramNo", Width = 150 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tarih", DataPropertyName = "TarihFormatted", Width = 110 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Program No", DataPropertyName = "ProgramNo", Width = 140 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tarih", DataPropertyName = "TarihFormatted", Width = 100 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Genel Başlık / Hedef Müşteri", DataPropertyName = "Baslik", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Araç / Sütun", DataPropertyName = "SutunBilgi", Width = 110 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Toplam Palet", DataPropertyName = "PaletBilgi", Width = 120 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Hazırlayan", DataPropertyName = "Hazirlayan", Width = 130 });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Durum", DataPropertyName = "Durum", Width = 110 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Araç / Sütun", DataPropertyName = "SutunBilgi", Width = 105 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Toplam Palet", DataPropertyName = "PaletBilgi", Width = 110 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Forklift Operatörü", DataPropertyName = "ForkliftOperator", Width = 145 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Hazırlayan", DataPropertyName = "Hazirlayan", Width = 120 });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Durum", DataPropertyName = "Durum", Width = 100 });
 
         _grid.CellDoubleClick += async (_, _) => await OpenSelectedForEditAsync();
         _grid.KeyDown += async (_, e) =>
@@ -503,6 +524,7 @@ public class YuklemeProgramiForm : Form
                 ? $"{p.SatirSayisi}x{p.SutunSayisi} Grid ({p.ToplamHucreSayisi} Bölüm)" 
                 : (p.SutunSayisi > 1 ? $"{p.SutunSayisi} Sütun" : "1 Sütun (Tam Sayfa)"),
             PaletBilgi = $"{p.ToplamPalet} PLT",
+            ForkliftOperator = string.IsNullOrWhiteSpace(p.ForkliftOperator) ? "-" : p.ForkliftOperator,
             p.Hazirlayan,
             p.Durum,
             Original = p

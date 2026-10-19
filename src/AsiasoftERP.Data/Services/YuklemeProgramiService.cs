@@ -31,6 +31,7 @@ public class YuklemeProgramiService
                 TOPLAM_PALET as ToplamPalet,
                 HAZIRLAYAN,
                 ONAYLAYAN,
+                COALESCE(FORKLIFT_OPERATOR, '') as ForkliftOperator,
                 DURUM,
                 NOTLAR,
                 GUNCELLEME_TARIHI as GuncellemeTarihi
@@ -58,6 +59,7 @@ public class YuklemeProgramiService
                 TOPLAM_PALET as ToplamPalet,
                 HAZIRLAYAN,
                 ONAYLAYAN,
+                COALESCE(FORKLIFT_OPERATOR, '') as ForkliftOperator,
                 DURUM,
                 NOTLAR,
                 GUNCELLEME_TARIHI as GuncellemeTarihi
@@ -109,9 +111,9 @@ public class YuklemeProgramiService
             {
                 const string sqlInsert = @"
                     INSERT INTO erp.yukleme_programi_ana 
-                        (PROGRAM_NO, TARIH, BASLIK, SUTUN_SAYISI, SATIR_SAYISI, TOPLAM_PALET, HAZIRLAYAN, ONAYLAYAN, DURUM, NOTLAR)
+                        (PROGRAM_NO, TARIH, BASLIK, SUTUN_SAYISI, SATIR_SAYISI, TOPLAM_PALET, HAZIRLAYAN, ONAYLAYAN, FORKLIFT_OPERATOR, DURUM, NOTLAR)
                     VALUES 
-                        (@ProgramNo, @Tarih, @Baslik, @SutunSayisi, @SatirSayisi, @ToplamPalet, @Hazirlayan, @Onaylayan, @Durum, @Notlar);
+                        (@ProgramNo, @Tarih, @Baslik, @SutunSayisi, @SatirSayisi, @ToplamPalet, @Hazirlayan, @Onaylayan, @ForkliftOperator, @Durum, @Notlar);
                     SELECT LAST_INSERT_ID();";
 
                 progId = await conn.ExecuteScalarAsync<int>(sqlInsert, prog, tran);
@@ -130,6 +132,7 @@ public class YuklemeProgramiService
                         TOPLAM_PALET = @ToplamPalet,
                         HAZIRLAYAN = @Hazirlayan,
                         ONAYLAYAN = @Onaylayan,
+                        FORKLIFT_OPERATOR = @ForkliftOperator,
                         DURUM = @Durum,
                         NOTLAR = @Notlar
                     WHERE ID = @Id;";
@@ -181,5 +184,75 @@ public class YuklemeProgramiService
         const string sql = "SELECT COUNT(*) FROM erp.yukleme_programi_ana WHERE PROGRAM_NO LIKE @p;";
         int count = await conn.ExecuteScalarAsync<int>(sql, new { p = $"{prefix}%" });
         return $"{prefix}{(count + 1):D2}";
+    }
+
+    // ================= FORKLİFT OPERATÖRLERİ CRUD =================
+
+    public async Task<List<ForkliftOperatorDto>> GetForkliftOperatorlerAsync(bool onlyActive = false)
+    {
+        using var conn = DbConnectionConfig.CreateConnection();
+        await conn.OpenAsync();
+
+        string where = onlyActive ? "WHERE DURUM = 'Aktif'" : "";
+        string sql = $@"
+            SELECT 
+                ID,
+                AD_SOYAD as AdSoyad,
+                COALESCE(TELEFON, '') as Telefon,
+                COALESCE(EHLIYET_NO, '') as EhliyetNo,
+                COALESCE(FORKLIFT_KODU, '') as ForkliftKodu,
+                COALESCE(VARDIYA, '1. Vardiya (Gündüz)') as Vardiya,
+                COALESCE(DURUM, 'Aktif') as Durum,
+                COALESCE(ACIKLAMA, '') as Aciklama,
+                COALESCE(KAYIT_TARIHI, NOW()) as KayitTarihi
+            FROM erp.forklift_operatorler
+            {where}
+            ORDER BY AD_SOYAD ASC;";
+
+        var list = (await conn.QueryAsync<ForkliftOperatorDto>(sql)).ToList();
+        return list;
+    }
+
+    public async Task<int> SaveForkliftOperatorAsync(ForkliftOperatorDto op)
+    {
+        using var conn = DbConnectionConfig.CreateConnection();
+        await conn.OpenAsync();
+
+        if (op.Id == 0)
+        {
+            const string sql = @"
+                INSERT INTO erp.forklift_operatorler 
+                    (AD_SOYAD, TELEFON, EHLIYET_NO, FORKLIFT_KODU, VARDIYA, DURUM, ACIKLAMA, KAYIT_TARIHI)
+                VALUES 
+                    (@AdSoyad, @Telefon, @EhliyetNo, @ForkliftKodu, @Vardiya, @Durum, @Aciklama, NOW());
+                SELECT LAST_INSERT_ID();";
+            int newId = await conn.ExecuteScalarAsync<int>(sql, op);
+            op.Id = newId;
+            return newId;
+        }
+        else
+        {
+            const string sql = @"
+                UPDATE erp.forklift_operatorler SET
+                    AD_SOYAD = @AdSoyad,
+                    TELEFON = @Telefon,
+                    EHLIYET_NO = @EhliyetNo,
+                    FORKLIFT_KODU = @ForkliftKodu,
+                    VARDIYA = @Vardiya,
+                    DURUM = @Durum,
+                    ACIKLAMA = @Aciklama
+                WHERE ID = @Id;";
+            await conn.ExecuteAsync(sql, op);
+            return op.Id;
+        }
+    }
+
+    public async Task<bool> DeleteForkliftOperatorAsync(int id)
+    {
+        using var conn = DbConnectionConfig.CreateConnection();
+        await conn.OpenAsync();
+
+        int affected = await conn.ExecuteAsync("DELETE FROM erp.forklift_operatorler WHERE ID = @id;", new { id });
+        return affected > 0;
     }
 }

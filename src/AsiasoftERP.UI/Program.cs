@@ -1312,6 +1312,72 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-forklift")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.SetAllowedModules(AppModuleRegistry.AllModules.Select(m => m.Key));
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+
+                var ykSrv = new YuklemeProgramiService();
+
+                // 1. Snapshot ForkliftOperatorTanimDialog
+                var forkDlg = new ForkliftOperatorTanimDialog();
+                forkDlg.StartPosition = FormStartPosition.Manual;
+                forkDlg.Location = new Point(80, 50);
+                forkDlg.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpFork = new Bitmap(forkDlg.Width, forkDlg.Height))
+                {
+                    forkDlg.DrawToBitmap(bmpFork, new Rectangle(0, 0, forkDlg.Width, forkDlg.Height));
+                    bmpFork.Save(Path.Combine(outDir, "forklift_operatorleri_rehberi.png"));
+                }
+                forkDlg.Close();
+
+                // 2. Snapshot YuklemeProgramiEditDialog with Forklift selected
+                var progs = ykSrv.GetAllAsync().GetAwaiter().GetResult();
+                var firstProg = progs.FirstOrDefault() ?? new YuklemeProgramiDto
+                {
+                    ProgramNo = "YP-2026-1019-01",
+                    Tarih = DateTime.Today,
+                    Baslik = "ROMANYA / BÜKREŞ SEVKİYATI",
+                    SatirSayisi = 1,
+                    SutunSayisi = 2,
+                    ToplamPalet = 26,
+                    Hazirlayan = "Ali SARIGÜL",
+                    Onaylayan = "İHRACAT BÖLÜMÜ",
+                    Durum = "Onaylandı"
+                };
+
+                firstProg.ForkliftOperator = "Ahmet KAYA (Toyota 01)";
+                var ykDetail = ykSrv.GetByIdAsync(firstProg.Id).GetAwaiter().GetResult() ?? firstProg;
+                ykDetail.ForkliftOperator = "Ahmet KAYA (Toyota 01)";
+
+                var editDlg = new YuklemeProgramiEditDialog(ykDetail);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(50, 40);
+                editDlg.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpEdit = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpEdit, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpEdit.Save(Path.Combine(outDir, "yukleme_programi_forklift_secimi.png"));
+                }
+                editDlg.Close();
+
+                // 3. Snapshot A4 report showing Forklift Operator
+                using (var bmpA4 = YuklemeProgramiReportRenderer.RenderToBitmap(ykDetail, 1200, 1695))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "yukleme_programi_a4_forklift_raporu.png"));
+                }
+
+                Console.WriteLine("FORKLIFT_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }

@@ -302,7 +302,7 @@ public static class YuklemeProgramiReportRenderer
         {
             "HAZIRLAYAN",
             "İHRACAT BÖLÜMÜ",
-            "NAKLİYE BÖLÜMÜ",
+            "FORKLİFT OPERATÖRÜ",
             "YÜKLEME SORUMLUSU",
             "İŞLETME ŞEFİ"
         };
@@ -311,7 +311,7 @@ public static class YuklemeProgramiReportRenderer
         {
             string.IsNullOrWhiteSpace(prog.Hazirlayan) ? "Ali SARIGÜL" : prog.Hazirlayan,
             prog.Onaylayan ?? "Onay",
-            "Onay",
+            string.IsNullOrWhiteSpace(prog.ForkliftOperator) ? "Atanacak" : prog.ForkliftOperator,
             "Onay",
             "Onay"
         };
