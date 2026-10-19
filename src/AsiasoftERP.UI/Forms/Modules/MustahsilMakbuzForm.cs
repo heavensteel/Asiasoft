@@ -36,6 +36,8 @@ public class MustahsilMakbuzForm : Form
     private Button _btnSearch = null!;
     private Button _btnNew = null!;
     private Button _btnEdit = null!;
+    private Button _btnSms = null!;
+    private Button _btnXml = null!;
     private Button _btnPrint = null!;
     private Button _btnDelete = null!;
     private Button _btnRefresh = null!;
@@ -168,29 +170,37 @@ public class MustahsilMakbuzForm : Form
         tx += 85;
 
         // Action Buttons (Right Aligned Container)
-        var pnlActions = new Panel { Dock = DockStyle.Right, Width = 640, BackColor = Color.Transparent };
+        var pnlActions = new Panel { Dock = DockStyle.Right, Width = 720, BackColor = Color.Transparent };
         int ax = 0;
 
-        _btnNew = CreateToolButton("➕ Yeni Makbuz", Color.FromArgb(16, 120, 70), Color.FromArgb(240, 253, 244), Color.FromArgb(134, 239, 172), ax, 130);
+        _btnNew = CreateToolButton("➕ Yeni", Color.FromArgb(16, 120, 70), Color.FromArgb(240, 253, 244), Color.FromArgb(134, 239, 172), ax, 80);
         _btnNew.Click += (_, _) => OpenMakbuzDialog(null);
-        ax += 138;
+        ax += 86;
 
-        _btnEdit = CreateToolButton("✏️ Düzenle", ModernColors.Slate700, Color.FromArgb(248, 250, 252), Color.FromArgb(203, 213, 225), ax, 95);
+        _btnEdit = CreateToolButton("✏️ Düzenle", ModernColors.Slate700, Color.FromArgb(248, 250, 252), Color.FromArgb(203, 213, 225), ax, 85);
         _btnEdit.Click += (_, _) => EditSelectedMakbuz();
-        ax += 102;
+        ax += 91;
 
-        _btnPrint = CreateToolButton("🖨️ Makbuz Yazdır", Color.FromArgb(30, 41, 59), Color.FromArgb(241, 245, 249), Color.FromArgb(203, 213, 225), ax, 135);
+        _btnSms = CreateToolButton("📲 SMS Onayı", Color.FromArgb(15, 23, 42), Color.FromArgb(241, 245, 249), Color.FromArgb(203, 213, 225), ax, 105);
+        _btnSms.Click += (_, _) => SmsVerifySelectedMakbuz();
+        ax += 111;
+
+        _btnXml = CreateToolButton("📄 GİB XML", Color.FromArgb(15, 23, 42), Color.FromArgb(241, 245, 249), Color.FromArgb(203, 213, 225), ax, 90);
+        _btnXml.Click += (_, _) => ShowXmlForSelectedMakbuz();
+        ax += 96;
+
+        _btnPrint = CreateToolButton("🖨️ Yazdır", Color.FromArgb(30, 41, 59), Color.FromArgb(241, 245, 249), Color.FromArgb(203, 213, 225), ax, 85);
         _btnPrint.Click += (_, _) => PrintSelectedMakbuz();
-        ax += 142;
+        ax += 91;
 
-        _btnDelete = CreateToolButton("🗑️ Sil", Color.FromArgb(190, 18, 60), Color.FromArgb(255, 241, 242), Color.FromArgb(254, 205, 211), ax, 75);
+        _btnDelete = CreateToolButton("🗑️ Sil", Color.FromArgb(190, 18, 60), Color.FromArgb(255, 241, 242), Color.FromArgb(254, 205, 211), ax, 65);
         _btnDelete.Click += async (_, _) => await DeleteSelectedMakbuzAsync();
-        ax += 82;
+        ax += 71;
 
-        _btnRefresh = CreateToolButton("⟳ Yenile", ModernColors.Slate700, Color.FromArgb(248, 250, 252), Color.FromArgb(203, 213, 225), ax, 80);
+        _btnRefresh = CreateToolButton("⟳ Yenile", ModernColors.Slate700, Color.FromArgb(248, 250, 252), Color.FromArgb(203, 213, 225), ax, 75);
         _btnRefresh.Click += async (_, _) => await LoadDataAsync();
 
-        pnlActions.Controls.AddRange(new Control[] { _btnNew, _btnEdit, _btnPrint, _btnDelete, _btnRefresh });
+        pnlActions.Controls.AddRange(new Control[] { _btnNew, _btnEdit, _btnSms, _btnXml, _btnPrint, _btnDelete, _btnRefresh });
 
         pnlToolbar.Controls.AddRange(new Control[] { lblTarih, _dtpStart, _dtpEnd, _txtSearch, _btnSearch, pnlActions });
 
@@ -256,6 +266,9 @@ public class MustahsilMakbuzForm : Form
         var contextMenu = new ContextMenuStrip { Font = new Font("Segoe UI", 9f) };
         contextMenu.Items.Add("🖨️ Resmi A4 Makbuzu Yazdır", null, (_, _) => PrintSelectedMakbuz());
         contextMenu.Items.Add("✏️ Makbuzu Düzenle", null, (_, _) => EditSelectedMakbuz());
+        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add("📲 SMS Onayı / Kodu Gönder", null, (_, _) => SmsVerifySelectedMakbuz());
+        contextMenu.Items.Add("📄 GİB UBL-TR XML Önizle", null, (_, _) => ShowXmlForSelectedMakbuz());
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add("🗑️ Makbuzu Sil", null, async (_, _) => await DeleteSelectedMakbuzAsync());
         contextMenu.Items.Add("⟳ Listeyi Yenile", null, async (_, _) => await LoadDataAsync());
@@ -367,6 +380,18 @@ public class MustahsilMakbuzForm : Form
             },
             new DataGridViewTextBoxColumn
             {
+                Name = "SmsDurumuBadge",
+                DataPropertyName = "SmsDurumuBadge",
+                HeaderText = "GİB SMS Onay",
+                Width = 145,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+                }
+            },
+            new DataGridViewTextBoxColumn
+            {
                 Name = "Bolgesi",
                 DataPropertyName = "Bolgesi",
                 HeaderText = "Bölge / İlçe",
@@ -466,6 +491,36 @@ public class MustahsilMakbuzForm : Form
 
     private void Grid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
     {
+        if (e.RowIndex >= 0 && e.Graphics != null && _grid.Columns["SmsDurumuBadge"] != null && e.ColumnIndex == _grid.Columns["SmsDurumuBadge"]!.Index)
+        {
+            e.PaintBackground(e.CellBounds, true);
+            var rowObj = _grid.Rows[e.RowIndex].DataBoundItem as MustahsilMakbuzDto;
+            bool isVerified = rowObj?.IsSmsDogrulandi ?? false;
+
+            var badgeRect = new Rectangle(
+                e.CellBounds.X + (e.CellBounds.Width - 130) / 2,
+                e.CellBounds.Y + (e.CellBounds.Height - 24) / 2,
+                130, 24);
+
+            Color bgColor = isVerified ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 243, 199);
+            Color brdColor = isVerified ? Color.FromArgb(134, 239, 172) : Color.FromArgb(252, 211, 77);
+            Color txtColor = isVerified ? Color.FromArgb(21, 128, 61) : Color.FromArgb(180, 83, 9);
+            string text = isVerified ? $"✓ Onaylı ({rowObj!.SmsDogrulamaKodu})" : "⏳ SMS Bekliyor";
+
+            using var brushBg = new SolidBrush(bgColor);
+            using var penBrd = new Pen(brdColor, 1f);
+            using var path = ModernUiHelper.GetRoundedPath(badgeRect, 6);
+            e.Graphics.FillPath(brushBg, path);
+            e.Graphics.DrawPath(penBrd, path);
+
+            using var brushText = new SolidBrush(txtColor);
+            using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            e.Graphics.DrawString(text, new Font("Segoe UI", 8.2f, FontStyle.Bold), brushText, badgeRect, sf);
+
+            e.Handled = true;
+            return;
+        }
+
         if (e.RowIndex >= 0 && e.Graphics != null && _grid.Columns["OdenenFormatted"] != null && e.ColumnIndex == _grid.Columns["OdenenFormatted"]!.Index)
         {
             e.PaintBackground(e.CellBounds, true);
@@ -552,6 +607,83 @@ public class MustahsilMakbuzForm : Form
             return;
         }
         MustahsilMakbuzReportRenderer.PrintReport(selected);
+    }
+
+    private void ShowXmlForSelectedMakbuz()
+    {
+        var selected = GetSelectedMakbuz();
+        if (selected == null)
+        {
+            MessageBox.Show("Lütfen XML'ini görüntülemek için bir makbuz seçiniz.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        string xml = selected.GenerateGibUblTrXml();
+
+        using var dlg = new Form
+        {
+            Text = $"📄 GİB e-Müstahsil UBL-TR 1.2.1 XML — {selected.MakbuzNo}",
+            Size = new Size(880, 640),
+            StartPosition = FormStartPosition.CenterParent,
+            BackColor = ModernColors.Slate100,
+            Font = new Font("Segoe UI", 9.5f)
+        };
+
+        var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.White, Padding = new Padding(16, 10, 16, 10) };
+        var lblT = new Label
+        {
+            Text = $"GİB 22.05.2026 Duyurusu & V1.1 Kılavuzuna Uygun UBL-TR 1.2.1 ({selected.MakbuzNo})",
+            Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+            ForeColor = ModernColors.Slate900,
+            Location = new Point(14, 14),
+            AutoSize = true
+        };
+        var btnCopy = new Button
+        {
+            Text = "📋 XML'i Kopyala",
+            Dock = DockStyle.Right,
+            Width = 140,
+            BackColor = Color.FromArgb(16, 120, 70),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnCopy.FlatAppearance.BorderSize = 0;
+        btnCopy.Click += (_, _) =>
+        {
+            Clipboard.SetText(xml);
+            MessageBox.Show("UBL-TR 1.2.1 XML panoya kopyalandı.", "Kopyalandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        };
+        pnlHdr.Controls.AddRange(new Control[] { lblT, btnCopy });
+
+        var txtXml = new TextBox
+        {
+            Dock = DockStyle.Fill,
+            Multiline = true,
+            ScrollBars = ScrollBars.Both,
+            Font = new Font("Consolas", 9.5f),
+            BackColor = Color.FromArgb(15, 23, 42),
+            ForeColor = Color.FromArgb(226, 232, 240),
+            Text = xml,
+            ReadOnly = true
+        };
+
+        dlg.Controls.Add(txtXml);
+        dlg.Controls.Add(pnlHdr);
+        dlg.ShowDialog(this);
+    }
+
+    private void SmsVerifySelectedMakbuz()
+    {
+        var selected = GetSelectedMakbuz();
+        if (selected == null)
+        {
+            MessageBox.Show("Lütfen SMS doğrulaması yapmak için bir makbuz seçiniz.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        OpenMakbuzDialog(selected);
     }
 
     private async Task DeleteSelectedMakbuzAsync()

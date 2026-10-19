@@ -115,7 +115,7 @@ public static class MustahsilMakbuzReportRenderer
 
         using var fontDocTitle = new Font("Segoe UI", 11f, FontStyle.Bold);
         using var fontDocSub = new Font("Segoe UI", 8.5f);
-        g.DrawString("🌾 MÜSTAHSİL MAKBUZU", fontDocTitle, brushEmerald, badgeRect.X + 12, badgeRect.Y + 6);
+        g.DrawString("MÜSTAHSİL MAKBUZU", fontDocTitle, brushEmerald, badgeRect.X + 12, badgeRect.Y + 6);
         g.DrawString($"Makbuz No: {m.MakbuzNo}", fontBold, brushDark, badgeRect.X + 12, badgeRect.Y + 28);
         g.DrawString($"Tarih: {m.TarihFormatted}  •  V.U.K. Md. 235", fontDocSub, brushMuted, badgeRect.X + 12, badgeRect.Y + 48);
 
@@ -262,19 +262,61 @@ public static class MustahsilMakbuzReportRenderer
 
         y += summaryH + 24;
 
-        // 5. SIGNATURE & STAMP BLOCKS (2 Equal Columns)
-        int sigH = 110;
+        // 5. SIGNATURE & ELECTRONIC SMS VERIFICATION BLOCKS (2 Equal Columns)
+        int sigH = 125;
         int sigW = (w - 16) / 2;
 
-        // Left Signature: Çiftçi / Müstahsil
+        // Left Signature: Çiftçi / Müstahsil (GİB SMS Electronic Verification)
         var sigLeft = new Rectangle(x, y, sigW, sigH);
-        g.FillRectangle(brushWhite, sigLeft);
-        g.DrawRectangle(penBorder, sigLeft);
 
-        g.DrawString("MALLARI TESLİM EDEN ÇİFTÇİ (MÜSTAHSİL)", fontKpiLbl, brushMuted, sigLeft.X + 12, sigLeft.Y + 10);
-        g.DrawString($"Adı Soyadı: {m.AdiSoyadi}", fontBold, brushDark, sigLeft.X + 12, sigLeft.Y + 30);
-        g.DrawString($"T.C. Kimlik No: {m.TcNo}", fontSub, brushDark, sigLeft.X + 12, sigLeft.Y + 48);
-        g.DrawString("İmza: (Yukarıda yazılı net bedeli eksiksiz teslim aldım)", fontSub, brushMuted, sigLeft.X + 12, sigLeft.Y + 88);
+        if (m.IsSmsDogrulandi)
+        {
+            using var brushSmsBg = new SolidBrush(Color.FromArgb(240, 253, 244));
+            using var penSmsBrd = new Pen(Color.FromArgb(34, 197, 94), 1.5f);
+            using var brushSmsGreen = new SolidBrush(Color.FromArgb(21, 128, 61));
+            using var fontSmsHdr = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            using var fontSmsCode = new Font("Segoe UI", 11.5f, FontStyle.Bold);
+            using var fontSmsVal = new Font("Segoe UI", 8f);
+            using var fontSmsLaw = new Font("Segoe UI", 7.2f, FontStyle.Italic);
+
+            g.FillRectangle(brushSmsBg, sigLeft);
+            g.DrawRectangle(penSmsBrd, sigLeft);
+
+            // Verified Badge Header
+            g.DrawString("✓ GİB ELEKTRONİK SMS DOĞRULAMA (05.11.2026 ZORUNLU)", fontSmsHdr, brushSmsGreen, sigLeft.X + 10, sigLeft.Y + 8);
+            g.DrawString($"Müstahsil: {m.AdiSoyadi}  •  TC: {m.TcNo}", fontSub, brushDark, sigLeft.X + 10, sigLeft.Y + 27);
+            
+            // Code & Phone highlight box
+            g.DrawString($"SMS Onay Kodu: {m.SmsDogrulamaKodu}", fontSmsCode, brushSmsGreen, sigLeft.X + 10, sigLeft.Y + 45);
+            g.DrawString($"Müstahsil Tel: {m.SmsTelefon}", fontBold, brushDark, sigLeft.X + 215, sigLeft.Y + 48);
+
+            // Carrier info
+            string opText = $"Operatör: {m.SmsOperator} (VKN: {m.SmsOperatorVkn})";
+            g.DrawString(opText, fontSmsVal, brushMuted, sigLeft.X + 10, sigLeft.Y + 68);
+
+            string dateText = m.SmsDogrulamaTarihi.HasValue
+                ? $"Doğrulama Zamanı: {m.SmsDogrulamaTarihi.Value:dd.MM.yyyy HH:mm:ss}"
+                : $"Doğrulama Zamanı: {m.Tarih:dd.MM.yyyy} (Zaman Damgalı)";
+            g.DrawString(dateText, fontSmsVal, brushMuted, sigLeft.X + 10, sigLeft.Y + 85);
+
+            // Legal text
+            g.DrawString("✓ GİB 22.05.2026 Duyurusu & V1.1 Kılavuzu Uyarınca Islak İmza Yerine Geçer.", fontSmsLaw, brushSmsGreen, sigLeft.X + 10, sigLeft.Y + 105);
+        }
+        else
+        {
+            using var brushWarnBg = new SolidBrush(Color.FromArgb(254, 242, 242));
+            using var penWarn = new Pen(Color.FromArgb(248, 113, 113), 1f);
+            using var brushWarnText = new SolidBrush(Color.FromArgb(185, 28, 28));
+
+            g.FillRectangle(brushWarnBg, sigLeft);
+            g.DrawRectangle(penWarn, sigLeft);
+
+            g.DrawString("! ÇİFTÇİ SMS DOĞRULAMASI BEKLİYOR", fontKpiLbl, brushWarnText, sigLeft.X + 10, sigLeft.Y + 8);
+            g.DrawString($"Adı Soyadı: {m.AdiSoyadi}   •   TC: {m.TcNo}", fontBold, brushDark, sigLeft.X + 10, sigLeft.Y + 28);
+            g.DrawString("Telefon: " + (string.IsNullOrEmpty(m.SmsTelefon) ? "(Telefon Belirtilmedi)" : m.SmsTelefon), fontSub, brushDark, sigLeft.X + 10, sigLeft.Y + 48);
+            g.DrawString("İmza: _______________________", fontSub, brushMuted, sigLeft.X + 10, sigLeft.Y + 75);
+            g.DrawString("⚠️ Dikkat: 05.11.2026 tarihinden itibaren SMS doğrulama zorunlu olup ıslak imza geçersizdir.", fontSub, brushWarnText, sigLeft.X + 10, sigLeft.Y + 105);
+        }
 
         // Right Signature: Tek Asya A.Ş.
         var sigRight = new Rectangle(x + sigW + 16, y, sigW, sigH);
@@ -284,6 +326,15 @@ public static class MustahsilMakbuzReportRenderer
         g.DrawString("MALLARI SATIN ALAN VE TEVKİFATI YAPAN", fontKpiLbl, brushMuted, sigRight.X + 12, sigRight.Y + 10);
         g.DrawString("TEK ASYA TARIM ÜRÜNLERİ LTD. ŞTİ.", fontBold, brushDark, sigRight.X + 12, sigRight.Y + 30);
         g.DrawString("Onay: Satın Alma & Ziraat Eksperi", fontSub, brushDark, sigRight.X + 12, sigRight.Y + 48);
-        g.DrawString("Yetkili Kaşe / İmza:", fontSub, brushMuted, sigRight.X + 12, sigRight.Y + 88);
+        g.DrawString("GİB Entegratör: TEK ASYA E-BELGE PORTALI", fontSub, brushMuted, sigRight.X + 12, sigRight.Y + 68);
+        g.DrawString("Yetkili Kaşe / Elektronik Mühür:", fontSub, brushMuted, sigRight.X + 12, sigRight.Y + 105);
+
+        // 6. OFFICIAL FOOTER NOTE
+        y += sigH + 15;
+        using var fontFooter = new Font("Segoe UI", 7.5f);
+        using var brushFoot = new SolidBrush(Color.FromArgb(148, 163, 184));
+        using var sfFoot = new StringFormat { Alignment = StringAlignment.Center };
+        g.DrawString("Gelir İdaresi Başkanlığı e-Müstahsil Makbuzu V1.1 Standardı  •  05.11.2026 SMS Doğrulama Zorunluluğuna Uygundur  •  Asiasoft ERP",
+            fontFooter, brushFoot, new Rectangle(x, y, w, 20), sfFoot);
     }
 }

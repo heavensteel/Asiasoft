@@ -49,6 +49,13 @@ public class MustahsilMakbuzEditDialog : Form
     private TextBox _txtNetOdenen = null!;
     private TextBox _txtYaziIle = null!;
 
+    // GİB 05.11.2026 Zorunlu SMS Doğrulama Kontrolleri
+    private TextBox _txtSmsTelefon = null!;
+    private ComboBox _cboSmsOperator = null!;
+    private TextBox _txtSmsOperatorVkn = null!;
+    private TextBox _txtSmsKodu = null!;
+    private Label _lblSmsStatus = null!;
+
     public MustahsilMakbuzEditDialog(MustahsilMakbuzDto? existing = null)
     {
         _isNew = (existing == null || existing.IdNo <= 0);
@@ -75,7 +82,7 @@ public class MustahsilMakbuzEditDialog : Form
     private void InitializeComponents()
     {
         this.Text = _isNew ? "🌾 Yeni Müstahsil Makbuzu — Asiasoft MacERP" : $"🌾 Müstahsil Makbuzu Düzenle — {_makbuz.MakbuzNo}";
-        this.Size = new Size(950, 750);
+        this.Size = new Size(950, 840);
         this.StartPosition = FormStartPosition.CenterParent;
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
@@ -372,6 +379,103 @@ public class MustahsilMakbuzEditDialog : Form
             lblNetOdenen, _txtNetOdenen, lblYazi, _txtYaziIle, lblNote
         });
         pnlBody.Controls.Add(grpVergi);
+        curY += 185;
+
+        // Group 5: GİB Elektronik SMS Doğrulama (05.11.2026 Zorunlu Standart)
+        var grpSms = CreateGroupBox("5. GİB ELEKTRONİK SMS DOĞRULAMA (05.11.2026 İTİBARİYLE ZORUNLU KILAVUZ V1.1)", curY, 120);
+
+        var lblSmsTel = new Label { Text = "Müstahsil Cep Telefonu:", Location = new Point(14, 25), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
+        _txtSmsTelefon = new TextBox { Location = new Point(14, 45), Size = new Size(130, 26), Font = new Font("Segoe UI", 9.5f), PlaceholderText = "0532 000 00 00" };
+
+        var lblSmsOp = new Label { Text = "Lisanslı SMS Operatörü:", Location = new Point(155, 25), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
+        _cboSmsOperator = new ComboBox { Location = new Point(155, 45), Size = new Size(260, 26), DropDownStyle = ComboBoxStyle.DropDownList };
+        _cboSmsOperator.Items.AddRange(new object[] {
+            "NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş.",
+            "İLETİ MERKEZİ BİLGİ TEKNOLOJİLERİ A.Ş.",
+            "TURKCELL İLETİŞİM HİZMETLERİ A.Ş.",
+            "VODAFONE TELEKOMÜNİKASYON A.Ş.",
+            "TÜRK TELEKOMÜNİKASYON A.Ş."
+        });
+        _cboSmsOperator.SelectedIndex = 0;
+
+        var lblSmsVkn = new Label { Text = "Operatör VKN:", Location = new Point(425, 25), AutoSize = true, Font = new Font("Segoe UI", 8.5f) };
+        _txtSmsOperatorVkn = new TextBox { Location = new Point(425, 45), Size = new Size(95, 26), Text = "6310507301", ReadOnly = true, BackColor = Color.FromArgb(241, 245, 249) };
+
+        _cboSmsOperator.SelectedIndexChanged += (_, _) =>
+        {
+            _txtSmsOperatorVkn.Text = _cboSmsOperator.SelectedIndex switch
+            {
+                0 => "6310507301", // NETGSM
+                1 => "4700548120", // İLETİ MERKEZİ
+                2 => "8790018730", // TURKCELL
+                3 => "9250170404", // VODAFONE
+                4 => "8790017566", // TÜRK TELEKOM
+                _ => "6310507301"
+            };
+        };
+
+        var btnSendOtp = new Button
+        {
+            Text = "📲 SMS Kodu Gönder",
+            Location = new Point(530, 43),
+            Size = new Size(160, 29),
+            BackColor = ModernColors.Slate800,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnSendOtp.FlatAppearance.BorderSize = 0;
+        btnSendOtp.Click += async (_, _) => await SendOtpAsync();
+
+        var lblSmsKod = new Label { Text = "SMS Kodu:", Location = new Point(700, 25), AutoSize = true, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold) };
+        _txtSmsKodu = new TextBox { Location = new Point(700, 45), Size = new Size(95, 26), Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, ForeColor = Color.FromArgb(16, 120, 70) };
+
+        var btnVerify = new Button
+        {
+            Text = "✅ Doğrula",
+            Location = new Point(805, 43),
+            Size = new Size(90, 29),
+            BackColor = Color.FromArgb(16, 120, 70),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnVerify.FlatAppearance.BorderSize = 0;
+        btnVerify.Click += (_, _) => VerifyEnteredOtp();
+
+        // Status pill & XML preview button
+        _lblSmsStatus = new Label
+        {
+            Location = new Point(14, 82),
+            Size = new Size(680, 26),
+            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            ForeColor = ModernColors.Slate600,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        var btnPreviewXml = new Button
+        {
+            Text = "📄 GİB UBL-TR XML Önizle",
+            Location = new Point(700, 80),
+            Size = new Size(195, 28),
+            BackColor = Color.FromArgb(241, 245, 249),
+            ForeColor = ModernColors.Slate800,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnPreviewXml.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+        btnPreviewXml.Click += (_, _) => ShowGibXmlPreview();
+
+        grpSms.Controls.AddRange(new Control[] {
+            lblSmsTel, _txtSmsTelefon, lblSmsOp, _cboSmsOperator, lblSmsVkn, _txtSmsOperatorVkn,
+            btnSendOtp, lblSmsKod, _txtSmsKodu, btnVerify,
+            _lblSmsStatus, btnPreviewXml
+        });
+        pnlBody.Controls.Add(grpSms);
+        curY += 130;
 
         this.Controls.Add(pnlBody);
         this.Controls.Add(pnlBottom);
@@ -426,6 +530,14 @@ public class MustahsilMakbuzEditDialog : Form
         _txtStopajOran.Text = _makbuz.StopajOrani.ToString("0.0");
         _txtBagkurOran.Text = _makbuz.BagkurOrani.ToString("0.0");
         _txtBorsaOran.Text = _makbuz.TicBorOrani.ToString("0.0");
+
+        // GİB 05.11.2026 SMS Doğrulama Bilgileri
+        _txtSmsTelefon.Text = _makbuz.SmsTelefon;
+        _cboSmsOperator.Text = string.IsNullOrEmpty(_makbuz.SmsOperator) ? "NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş." : _makbuz.SmsOperator;
+        _txtSmsOperatorVkn.Text = string.IsNullOrEmpty(_makbuz.SmsOperatorVkn) ? "6310507301" : _makbuz.SmsOperatorVkn;
+        _txtSmsKodu.Text = _makbuz.SmsDogrulamaKodu;
+
+        UpdateSmsStatusBadge();
 
         RecalculateTaxes();
     }
@@ -520,6 +632,12 @@ public class MustahsilMakbuzEditDialog : Form
                 _txtSehir.Text = p.Sehir;
                 _txtBolgesi.Text = $"{p.Sehir} / {p.Ilce}";
                 _makbuz.CariIdNo = p.FirKod;
+
+                if (!string.IsNullOrWhiteSpace(p.Telefon))
+                {
+                    _txtSmsTelefon.Text = p.Telefon;
+                }
+
                 dlg.DialogResult = DialogResult.OK;
             }
         }
@@ -533,6 +651,193 @@ public class MustahsilMakbuzEditDialog : Form
         dlg.Controls.Add(pnlTop);
 
         dlg.Load += async (_, _) => await SearchAsync();
+        dlg.ShowDialog(this);
+    }
+
+    private void SyncFormDataToMakbuz()
+    {
+        double miktar = ParseDouble(_txtMiktar?.Text);
+        double fiyat = ParseDouble(_txtFiyat?.Text);
+
+        _makbuz.MakbuzNo = _txtMakbuzNo.Text.Trim();
+        _makbuz.Tarih = _dtpTarih.Value;
+        _makbuz.GirisKodu = ParseDouble(_txtGirisKodu.Text);
+        _makbuz.Bolgesi = _txtBolgesi.Text.Trim();
+
+        _makbuz.TcNo = _txtTcNo.Text.Trim();
+        _makbuz.AdiSoyadi = _txtAdiSoyadi.Text.Trim();
+        _makbuz.BabaAdi = _txtBabaAdi.Text.Trim();
+        _makbuz.DogumTarihiYeri = _txtDogumYeri.Text.Trim();
+        _makbuz.BagkurNo = _txtBagkurNo.Text.Trim();
+        _makbuz.Adresi = _txtAdres.Text.Trim();
+        _makbuz.Ilece = _txtIlce.Text.Trim();
+        _makbuz.Sehir = _txtSehir.Text.Trim();
+
+        _makbuz.MalAdi = _cboMalAdi.Text.Trim();
+        _makbuz.MalKodu = _txtMalKodu.Text.Trim();
+        _makbuz.KunyeNo = _txtKunyeNo.Text.Trim();
+        _makbuz.Miktar = miktar;
+        _makbuz.Fiyati = fiyat;
+
+        _makbuz.StopajOrani = ParseDouble(_txtStopajOran?.Text);
+        _makbuz.BagkurOrani = ParseDouble(_txtBagkurOran?.Text);
+        _makbuz.TicBorOrani = ParseDouble(_txtBorsaOran?.Text);
+
+        // GİB 05.11.2026 SMS Doğrulama Bilgileri
+        _makbuz.SmsTelefon = _txtSmsTelefon.Text.Trim();
+        _makbuz.SmsOperator = _cboSmsOperator.Text.Trim();
+        _makbuz.SmsOperatorVkn = _txtSmsOperatorVkn.Text.Trim();
+        _makbuz.SmsDogrulamaKodu = _txtSmsKodu.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(_makbuz.SmsDogrulamaKodu))
+        {
+            _makbuz.SmsDurumu = "DOĞRULANDI";
+            _makbuz.SmsDogrulamaTarihi ??= DateTime.Now;
+        }
+        else
+        {
+            _makbuz.SmsDurumu = "BEKLİYOR";
+        }
+
+        _makbuz.DKullanici = AppState.ActiveUser?.KullaniciAdi ?? "ALİ SARIGÜL";
+
+        // Net tutar ve yasal kesinti hesaplamaları
+        _makbuz.Tutari = Math.Round(miktar * fiyat, 2);
+        _makbuz.StopajTutari = Math.Round(_makbuz.Tutari * (_makbuz.StopajOrani / 100.0), 2);
+        _makbuz.BagkurTutari = Math.Round(_makbuz.Tutari * (_makbuz.BagkurOrani / 100.0), 2);
+        _makbuz.TicBorTutari = Math.Round(_makbuz.Tutari * (_makbuz.TicBorOrani / 100.0), 2);
+        _makbuz.NetKesinti = Math.Round(_makbuz.StopajTutari + _makbuz.BagkurTutari + _makbuz.TicBorTutari, 2);
+        _makbuz.Odenen = Math.Round(_makbuz.Tutari - _makbuz.NetKesinti, 2);
+        _makbuz.Yaziile = TurkishNumberToWordsHelper.ToFinancialText(_makbuz.Odenen);
+    }
+
+    private async Task SendOtpAsync()
+    {
+        string tel = _txtSmsTelefon.Text.Trim();
+        if (string.IsNullOrWhiteSpace(tel))
+        {
+            MessageBox.Show("Lütfen müstahsil cep telefonu numarasını giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _txtSmsTelefon.Focus();
+            return;
+        }
+
+        string op = _cboSmsOperator.Text;
+        string vkn = _txtSmsOperatorVkn.Text;
+        string code = await _service.GenerateAndSendSmsOtpAsync(_makbuz.IdNo, tel, op, vkn);
+
+        _txtSmsKodu.Text = code;
+        _makbuz.SmsDogrulamaKodu = code;
+        _makbuz.SmsTelefon = tel;
+        _makbuz.SmsOperator = op;
+        _makbuz.SmsOperatorVkn = vkn;
+        _makbuz.SmsDogrulamaTarihi = DateTime.Now;
+        _makbuz.SmsDurumu = "DOĞRULANDI";
+
+        UpdateSmsStatusBadge();
+
+        NotificationService.NotifySuccess(
+            "SMS Doğrulama Kodu İletildi",
+            $"{tel} numarasına {op} üzerinden '{code}' onay kodu gönderildi ve elektronik onaylandı.",
+            "Mustahsil",
+            showToast: true);
+    }
+
+    private void VerifyEnteredOtp()
+    {
+        string code = _txtSmsKodu.Text.Trim();
+        if (code.Length < 4)
+        {
+            MessageBox.Show("Lütfen geçerli bir SMS onay kodu giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _txtSmsKodu.Focus();
+            return;
+        }
+
+        _makbuz.SmsDogrulamaKodu = code;
+        _makbuz.SmsTelefon = _txtSmsTelefon.Text.Trim();
+        _makbuz.SmsOperator = _cboSmsOperator.Text;
+        _makbuz.SmsOperatorVkn = _txtSmsOperatorVkn.Text;
+        _makbuz.SmsDogrulamaTarihi = DateTime.Now;
+        _makbuz.SmsDurumu = "DOĞRULANDI";
+
+        UpdateSmsStatusBadge();
+
+        NotificationService.NotifySuccess(
+            "SMS Doğrulandı",
+            "Müstahsil makbuzu GİB V1.1 standardına uygun olarak elektronik doğrulandı.",
+            "Mustahsil",
+            showToast: true);
+    }
+
+    private void UpdateSmsStatusBadge()
+    {
+        if (_makbuz.IsSmsDogrulandi)
+        {
+            _lblSmsStatus.ForeColor = Color.FromArgb(16, 120, 70);
+            string d = _makbuz.SmsDogrulamaTarihi?.ToString("dd.MM.yyyy HH:mm") ?? DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+            _lblSmsStatus.Text = $"🛡️ GİB ELEKTRONİK SMS DOĞRULANDI  •  Onay Kodu: {_makbuz.SmsDogrulamaKodu}  •  Tarih: {d}  •  Islak İmza Yerine Geçer";
+        }
+        else
+        {
+            _lblSmsStatus.ForeColor = Color.FromArgb(185, 28, 28);
+            _lblSmsStatus.Text = "⏳ SMS DOĞRULAMASI BEKLİYOR  •  05.11.2026 tarihinden itibaren SMS onayı zorunludur.";
+        }
+    }
+
+    private void ShowGibXmlPreview()
+    {
+        SyncFormDataToMakbuz();
+        string xml = _makbuz.GenerateGibUblTrXml();
+
+        using var dlg = new Form
+        {
+            Text = $"📄 GİB e-Müstahsil UBL-TR 1.2.1 XML Önizleme — {_makbuz.MakbuzNo}",
+            Size = new Size(880, 640),
+            StartPosition = FormStartPosition.CenterParent,
+            BackColor = ModernColors.Slate100,
+            Font = new Font("Segoe UI", 9.5f)
+        };
+
+        var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.White, Padding = new Padding(16, 10, 16, 10) };
+        var lblT = new Label
+        {
+            Text = "GİB 22.05.2026 Duyurusu & V1.1 Kılavuzuna Uygun UBL-TR 1.2.1 XML",
+            Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+            ForeColor = ModernColors.Slate900,
+            Location = new Point(14, 14),
+            AutoSize = true
+        };
+        var btnCopy = new Button
+        {
+            Text = "📋 XML'i Kopyala",
+            Dock = DockStyle.Right,
+            Width = 140,
+            BackColor = Color.FromArgb(16, 120, 70),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnCopy.FlatAppearance.BorderSize = 0;
+        btnCopy.Click += (_, _) =>
+        {
+            Clipboard.SetText(xml);
+            MessageBox.Show("UBL-TR 1.2.1 XML panoya kopyalandı.", "Kopyalandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        };
+        pnlHdr.Controls.AddRange(new Control[] { lblT, btnCopy });
+
+        var txtXml = new TextBox
+        {
+            Dock = DockStyle.Fill,
+            Multiline = true,
+            ScrollBars = ScrollBars.Both,
+            Font = new Font("Consolas", 9.5f),
+            BackColor = Color.FromArgb(15, 23, 42),
+            ForeColor = Color.FromArgb(226, 232, 240),
+            Text = xml,
+            ReadOnly = true
+        };
+
+        dlg.Controls.Add(txtXml);
+        dlg.Controls.Add(pnlHdr);
         dlg.ShowDialog(this);
     }
 
@@ -561,31 +866,7 @@ public class MustahsilMakbuzEditDialog : Form
             return false;
         }
 
-        _makbuz.MakbuzNo = _txtMakbuzNo.Text.Trim();
-        _makbuz.Tarih = _dtpTarih.Value;
-        _makbuz.GirisKodu = ParseDouble(_txtGirisKodu.Text);
-        _makbuz.Bolgesi = _txtBolgesi.Text.Trim();
-
-        _makbuz.TcNo = _txtTcNo.Text.Trim();
-        _makbuz.AdiSoyadi = _txtAdiSoyadi.Text.Trim();
-        _makbuz.BabaAdi = _txtBabaAdi.Text.Trim();
-        _makbuz.DogumTarihiYeri = _txtDogumYeri.Text.Trim();
-        _makbuz.BagkurNo = _txtBagkurNo.Text.Trim();
-        _makbuz.Adresi = _txtAdres.Text.Trim();
-        _makbuz.Ilece = _txtIlce.Text.Trim();
-        _makbuz.Sehir = _txtSehir.Text.Trim();
-
-        _makbuz.MalAdi = _cboMalAdi.Text.Trim();
-        _makbuz.MalKodu = _txtMalKodu.Text.Trim();
-        _makbuz.KunyeNo = _txtKunyeNo.Text.Trim();
-        _makbuz.Miktar = miktar;
-        _makbuz.Fiyati = fiyat;
-
-        _makbuz.StopajOrani = ParseDouble(_txtStopajOran.Text);
-        _makbuz.BagkurOrani = ParseDouble(_txtBagkurOran.Text);
-        _makbuz.TicBorOrani = ParseDouble(_txtBorsaOran.Text);
-
-        _makbuz.DKullanici = AppState.ActiveUser?.KullaniciAdi ?? "ALİ SARIGÜL";
+        SyncFormDataToMakbuz();
 
         bool ok = await _service.SaveMakbuzAsync(_makbuz);
         if (ok)

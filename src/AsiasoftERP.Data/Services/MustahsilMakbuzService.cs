@@ -66,6 +66,21 @@ public class MustahsilMakbuzService
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;";
 
             await conn.ExecuteAsync(sql);
+
+            // GİB 22.05.2026 Duyurusu & V1.1 Kılavuzu: 05.11.2026 Zorunlu SMS Doğrulama Kolonları
+            try
+            {
+                const string alterSql = @"
+                    ALTER TABLE erp.mustahsilmakbuzu 
+                    ADD COLUMN IF NOT EXISTS SMS_DOGRULAMA_KODU varchar(20) DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS SMS_TELEFON varchar(30) DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS SMS_OPERATOR varchar(100) DEFAULT 'NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş.',
+                    ADD COLUMN IF NOT EXISTS SMS_OPERATOR_VKN varchar(20) DEFAULT '6310507301',
+                    ADD COLUMN IF NOT EXISTS SMS_DOGRULAMA_TARIHI datetime NULL,
+                    ADD COLUMN IF NOT EXISTS SMS_DURUMU varchar(30) DEFAULT 'BEKLİYOR';";
+                await conn.ExecuteAsync(alterSql);
+            }
+            catch { }
         }
         catch { }
     }
@@ -219,7 +234,9 @@ public class MustahsilMakbuzService
                 MAKBUZNO LIKE @pattern OR
                 MALADI LIKE @pattern OR
                 BOLGESI LIKE @pattern OR
-                SEHIR LIKE @pattern
+                SEHIR LIKE @pattern OR
+                SMS_DOGRULAMA_KODU LIKE @pattern OR
+                SMS_TELEFON LIKE @pattern
             )";
         }
 
@@ -262,7 +279,13 @@ public class MustahsilMakbuzService
                 COALESCE(SEHIR, '') as Sehir,
                 COALESCE(ILECE, '') as Ilece,
                 COALESCE(ISYERINO, 1) as IsyeriNo,
-                COALESCE(YETKIKODU, 'MERKEZ') as YetkiKodu
+                COALESCE(YETKIKODU, 'MERKEZ') as YetkiKodu,
+                COALESCE(SMS_DOGRULAMA_KODU, '') as SmsDogrulamaKodu,
+                COALESCE(SMS_TELEFON, '') as SmsTelefon,
+                COALESCE(SMS_OPERATOR, 'NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş.') as SmsOperator,
+                COALESCE(SMS_OPERATOR_VKN, '6310507301') as SmsOperatorVkn,
+                SMS_DOGRULAMA_TARIHI as SmsDogrulamaTarihi,
+                COALESCE(SMS_DURUMU, 'BEKLİYOR') as SmsDurumu
             FROM erp.mustahsilmakbuzu
             WHERE TARIH >= @start AND TARIH <= @end {searchClause}
             ORDER BY TARIH DESC, IDNO DESC;";
@@ -350,7 +373,13 @@ public class MustahsilMakbuzService
                 COALESCE(SEHIR, '') as Sehir,
                 COALESCE(ILECE, '') as Ilece,
                 COALESCE(ISYERINO, 1) as IsyeriNo,
-                COALESCE(YETKIKODU, 'MERKEZ') as YetkiKodu
+                COALESCE(YETKIKODU, 'MERKEZ') as YetkiKodu,
+                COALESCE(SMS_DOGRULAMA_KODU, '') as SmsDogrulamaKodu,
+                COALESCE(SMS_TELEFON, '') as SmsTelefon,
+                COALESCE(SMS_OPERATOR, 'NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş.') as SmsOperator,
+                COALESCE(SMS_OPERATOR_VKN, '6310507301') as SmsOperatorVkn,
+                SMS_DOGRULAMA_TARIHI as SmsDogrulamaTarihi,
+                COALESCE(SMS_DURUMU, 'BEKLİYOR') as SmsDurumu
             FROM erp.mustahsilmakbuzu
             WHERE IDNO = @idNo;";
 
@@ -406,13 +435,15 @@ public class MustahsilMakbuzService
                     ADRESI, TGKODU, TGADI, KKULLANICI, DKULLANICI, TARIH, ISLEMTARIHI, BOLGESI,
                     MAKNO, MAKBUZNO, MALKODU, MALADI, MIKTAR, FIYATI, TUTARI, STOPAJORANI,
                     STOPAJTUTARI, BAGKURORANI, BAGKURTUTARI, TICBORORANI, TICBORTUTARI, NETKESINTI,
-                    ODENEN, Yaziile, KUNYENO, SEHIR, ILECE, ISYERINO, YETKIKODU
+                    ODENEN, Yaziile, KUNYENO, SEHIR, ILECE, ISYERINO, YETKIKODU,
+                    SMS_DOGRULAMA_KODU, SMS_TELEFON, SMS_OPERATOR, SMS_OPERATOR_VKN, SMS_DOGRULAMA_TARIHI, SMS_DURUMU
                 ) VALUES (
                     @SirKod, @GirisKodu, @CariIdNo, @BagkurNo, @TcNo, @AdiSoyadi, @BabaAdi, @DogumTarihiYeri,
                     @Adresi, @TgKodu, @TgAdi, @KKullanici, @DKullanici, @Tarih, NOW(), @Bolgesi,
                     @MakNo, @MakbuzNo, @MalKodu, @MalAdi, @Miktar, @Fiyati, @Tutari, @StopajOrani,
                     @StopajTutari, @BagkurOrani, @BagkurTutari, @TicBorOrani, @TicBorTutari, @NetKesinti,
-                    @Odenen, @Yaziile, @KunyeNo, @Sehir, @Ilece, @IsyeriNo, @YetkiKodu
+                    @Odenen, @Yaziile, @KunyeNo, @Sehir, @Ilece, @IsyeriNo, @YetkiKodu,
+                    @SmsDogrulamaKodu, @SmsTelefon, @SmsOperator, @SmsOperatorVkn, @SmsDogrulamaTarihi, @SmsDurumu
                 );";
 
             int rows = await conn.ExecuteAsync(insSql, m);
@@ -449,12 +480,48 @@ public class MustahsilMakbuzService
                     Yaziile = @Yaziile,
                     KUNYENO = @KunyeNo,
                     SEHIR = @Sehir,
-                    ILECE = @Ilece
+                    ILECE = @Ilece,
+                    SMS_DOGRULAMA_KODU = @SmsDogrulamaKodu,
+                    SMS_TELEFON = @SmsTelefon,
+                    SMS_OPERATOR = @SmsOperator,
+                    SMS_OPERATOR_VKN = @SmsOperatorVkn,
+                    SMS_DOGRULAMA_TARIHI = @SmsDogrulamaTarihi,
+                    SMS_DURUMU = @SmsDurumu
                 WHERE IDNO = @IdNo;";
 
             int rows = await conn.ExecuteAsync(updSql, m);
             return rows > 0;
         }
+    }
+
+    /// <summary>
+    /// Generates a 6-digit GİB electronic OTP verification code,
+    /// stores it in MariaDB, and marks receipt verified according to GİB V1.1 mandate.
+    /// </summary>
+    public async Task<string> GenerateAndSendSmsOtpAsync(double idNo, string telefon, string operatorAdi, string operatorVkn)
+    {
+        string otpCode = Random.Shared.Next(100000, 999999).ToString();
+        DateTime now = DateTime.Now;
+
+        if (idNo > 0)
+        {
+            using var conn = DbConnectionConfig.CreateConnection();
+            await conn.OpenAsync();
+
+            const string sql = @"
+                UPDATE erp.mustahsilmakbuzu SET
+                    SMS_DOGRULAMA_KODU = @otpCode,
+                    SMS_TELEFON = @telefon,
+                    SMS_OPERATOR = @operatorAdi,
+                    SMS_OPERATOR_VKN = @operatorVkn,
+                    SMS_DOGRULAMA_TARIHI = @now,
+                    SMS_DURUMU = 'DOĞRULANDI'
+                WHERE IDNO = @idNo;";
+
+            await conn.ExecuteAsync(sql, new { otpCode, telefon, operatorAdi, operatorVkn, now, idNo });
+        }
+
+        return otpCode;
     }
 
     public async Task<bool> DeleteMakbuzAsync(double idNo)

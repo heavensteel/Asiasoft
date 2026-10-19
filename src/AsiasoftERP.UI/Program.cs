@@ -1378,6 +1378,148 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-mustahsil-sms")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+                var service = new MustahsilMakbuzService();
+                var list = service.GetMakbuzlarAsync(DateTime.Today.AddDays(-90), DateTime.Today.AddDays(5)).GetAwaiter().GetResult();
+                var verifiedMakbuz = list.FirstOrDefault(m => m.IsSmsDogrulandi) ?? list.FirstOrDefault();
+
+                if (verifiedMakbuz == null)
+                {
+                    verifiedMakbuz = new MustahsilMakbuzDto
+                    {
+                        IdNo = 1,
+                        MakbuzNo = "MM-2026-1001",
+                        Tarih = DateTime.Today,
+                        AdiSoyadi = "ÖZCAN AĞAOĞLU",
+                        TcNo = "15685272376",
+                        Bolgesi = "ADANA / YÜREĞİR",
+                        MalAdi = "LİMON - ENTER",
+                        MalKodu = "1102",
+                        KunyeNo = "HKS-031-20261001",
+                        Miktar = 14500,
+                        Fiyati = 16.50,
+                        Tutari = 239250.00,
+                        StopajOrani = 2.0,
+                        StopajTutari = 4785.00,
+                        BagkurOrani = 2.0,
+                        BagkurTutari = 4785.00,
+                        TicBorOrani = 0.2,
+                        TicBorTutari = 478.50,
+                        NetKesinti = 10048.50,
+                        Odenen = 229201.50,
+                        Yaziile = "İKİYÜZYİRMİDOKUZBİN İKİYÜZBİR TL ELLİ KR.",
+                        SmsDogrulamaKodu = "489215",
+                        SmsTelefon = "0532 441 28 90",
+                        SmsOperator = "NETGSM İLETİŞİM BİLGİ TEKNOLOJİLERİ A.Ş.",
+                        SmsOperatorVkn = "6310507301",
+                        SmsDogrulamaTarihi = DateTime.Now,
+                        SmsDurumu = "DOĞRULANDI"
+                    };
+                }
+
+                // 1. Snapshot A4 Receipt with GİB SMS Security Seal
+                using (var bmpA4 = MustahsilMakbuzReportRenderer.RenderToBitmap(verifiedMakbuz, 1200, 1695))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "mustahsil_sms_a4_resmi_baski.png"));
+                }
+
+                // 2. Snapshot MustahsilMakbuzEditDialog showing GİB SMS Panel
+                var editDlg = new MustahsilMakbuzEditDialog(verifiedMakbuz);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(80, 40);
+                editDlg.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpEdit = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpEdit, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpEdit.Save(Path.Combine(outDir, "mustahsil_sms_dialog_ekrani.png"));
+                }
+                editDlg.Close();
+
+                // 3. Snapshot MustahsilMakbuzForm Grid with GİB SMS Status Pills
+                var gridForm = new MustahsilMakbuzForm();
+                gridForm.StartPosition = FormStartPosition.Manual;
+                gridForm.Location = new Point(40, 40);
+                gridForm.Size = new Size(1360, 780);
+                gridForm.Show();
+                for (int i = 0; i < 35; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpGrid = new Bitmap(gridForm.Width, gridForm.Height))
+                {
+                    gridForm.DrawToBitmap(bmpGrid, new Rectangle(0, 0, gridForm.Width, gridForm.Height));
+                    bmpGrid.Save(Path.Combine(outDir, "mustahsil_sms_grid_yonetimi.png"));
+                }
+                gridForm.Close();
+
+                // 4. Snapshot GİB UBL-TR 1.2.1 XML Modal
+                string xml = verifiedMakbuz.GenerateGibUblTrXml();
+                using (var xmlDlg = new Form
+                {
+                    Text = $"📄 GİB e-Müstahsil UBL-TR 1.2.1 XML Önizleme — {verifiedMakbuz.MakbuzNo}",
+                    Size = new Size(880, 640),
+                    StartPosition = FormStartPosition.Manual,
+                    Location = new Point(100, 60),
+                    BackColor = ModernColors.Slate100,
+                    Font = new Font("Segoe UI", 9.5f)
+                })
+                {
+                    var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Color.White, Padding = new Padding(16, 10, 16, 10) };
+                    var lblT = new Label
+                    {
+                        Text = "GİB 22.05.2026 Duyurusu & V1.1 Kılavuzuna Uygun UBL-TR 1.2.1 XML",
+                        Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                        ForeColor = ModernColors.Slate900,
+                        Location = new Point(14, 14),
+                        AutoSize = true
+                    };
+                    var btnCopy = new Button
+                    {
+                        Text = "📋 XML'i Kopyala",
+                        Dock = DockStyle.Right,
+                        Width = 140,
+                        BackColor = Color.FromArgb(16, 120, 70),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                    };
+                    btnCopy.FlatAppearance.BorderSize = 0;
+                    pnlHdr.Controls.AddRange(new Control[] { lblT, btnCopy });
+
+                    var txtXml = new TextBox
+                    {
+                        Dock = DockStyle.Fill,
+                        Multiline = true,
+                        ScrollBars = ScrollBars.Both,
+                        Font = new Font("Consolas", 9.5f),
+                        BackColor = Color.FromArgb(15, 23, 42),
+                        ForeColor = Color.FromArgb(226, 232, 240),
+                        Text = xml,
+                        ReadOnly = true
+                    };
+
+                    xmlDlg.Controls.Add(txtXml);
+                    xmlDlg.Controls.Add(pnlHdr);
+                    xmlDlg.Show();
+                    for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                    using (var bmpXml = new Bitmap(xmlDlg.Width, xmlDlg.Height))
+                    {
+                        xmlDlg.DrawToBitmap(bmpXml, new Rectangle(0, 0, xmlDlg.Width, xmlDlg.Height));
+                        bmpXml.Save(Path.Combine(outDir, "mustahsil_sms_ubl_tr_xml.png"));
+                    }
+                    xmlDlg.Close();
+                }
+
+                Console.WriteLine("MUSTAHSIL_SMS_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }
