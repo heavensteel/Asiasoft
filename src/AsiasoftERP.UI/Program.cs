@@ -1221,6 +1221,97 @@ static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "--snapshot-siparis")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.SetAllowedModules(AppModuleRegistry.AllModules.Select(m => m.Key));
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+
+                var srv = new SiparisService();
+
+                // 1. Snapshot SiparisForm
+                var siparisForm = new SiparisForm();
+                siparisForm.StartPosition = FormStartPosition.Manual;
+                siparisForm.Location = new Point(0, 0);
+                siparisForm.Size = new Size(1380, 840);
+                siparisForm.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpMain = new Bitmap(siparisForm.Width, siparisForm.Height))
+                {
+                    siparisForm.DrawToBitmap(bmpMain, new Rectangle(0, 0, siparisForm.Width, siparisForm.Height));
+                    bmpMain.Save(Path.Combine(outDir, "siparis_yonetimi_genel_ekrani.png"));
+                }
+
+                // 2. Snapshot SiparisEditDialog
+                var alinanlar = srv.GetSiparislerAsync(SiparisYonu.Alinan, DateTime.Today.AddDays(-365), DateTime.Today.AddDays(30)).GetAwaiter().GetResult();
+                var firstSiparis = alinanlar.FirstOrDefault(s => s.Detaylar != null && s.Detaylar.Count > 0) 
+                                   ?? alinanlar.FirstOrDefault();
+
+                if (firstSiparis != null)
+                {
+                    firstSiparis.Detaylar = srv.GetSiparisDetaylarAsync(SiparisYonu.Alinan, firstSiparis.FisNo).GetAwaiter().GetResult();
+                }
+
+                if (firstSiparis == null || firstSiparis.Detaylar.Count == 0)
+                {
+                    firstSiparis = new SiparisDto
+                    {
+                        FisNo = 1042,
+                        Tarih = DateTime.Today.AddDays(-2),
+                        BaslamaTarihi = DateTime.Today,
+                        BitisTarihi = DateTime.Today.AddDays(5),
+                        FirmaAdi = "MAKRO CASH & CARRY POLSKA S.A.",
+                        Ulke = "POLONYA",
+                        Sehir = "WARSZAWA",
+                        SatisSekli = "İHRACAT",
+                        Durumu = "ONAYLANDI",
+                        AracPlaka = "31 K 8421",
+                        AracPlaka2 = "31 AIJ 779",
+                        SoforAdi = "MEHMET ALİ KAYA",
+                        SoforTelefon = "+90 532 555 12 34",
+                        GumrukAdres = "KAPIKULE T1 TRANSİT GÜMRÜĞÜ",
+                        BosaltmaAdresi = "AL. KRAKOWSKA 61, 02-183 WARSZAWA, POLSKA",
+                        DovizTuru = "EUR",
+                        Aciklama = "Sertifikalı Mayer cinsi limon, epal paletli, sıcaklık derecesi +4C ayarlı frigo araç sevkiyatı.",
+                        Detaylar = new List<SiparisDetayDto>
+                        {
+                            new() { MalKodu = "01.01.002", MalAdi = "LİMON (MAYER)", Boy = "58MM+", Kalite = "1.KALİTE", KutuAdi = "KARTON KUTU 10 KG", PaletAdi = "80*120 EPAL", PaletSayisi = 12, ParcaSayisi = 960, NetKg = 9600, Fiyati = 1.15, DovizTuru = "EUR", Tutari = 11040 },
+                            new() { MalKodu = "01.01.001", MalAdi = "LİMON (ENTERDONAT)", Boy = "62MM+", Kalite = "EXTRA", KutuAdi = "KARTON KUTU 10 KG", PaletAdi = "80*120 EPAL", PaletSayisi = 14, ParcaSayisi = 1120, NetKg = 11200, Fiyati = 1.25, DovizTuru = "EUR", Tutari = 14000 }
+                        }
+                    };
+                    firstSiparis.PaletToplam = firstSiparis.Detaylar.Sum(d => d.PaletSayisi);
+                    firstSiparis.KasaToplam = firstSiparis.Detaylar.Sum(d => d.ParcaSayisi);
+                    firstSiparis.NetToplam = firstSiparis.Detaylar.Sum(d => d.NetKg);
+                    firstSiparis.ToplamTutar = firstSiparis.Detaylar.Sum(d => d.Tutari);
+                }
+
+                var editDlg = new SiparisEditDialog(SiparisYonu.Alinan, firstSiparis);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(80, 50);
+                editDlg.Show();
+                for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpDlg.Save(Path.Combine(outDir, "siparis_dialog_ekrani.png"));
+                }
+                editDlg.Close();
+                siparisForm.Close();
+
+                // 3. Snapshot Siparis A4 Report
+                using (var bmpA4 = SiparisReportRenderer.RenderToBitmap(firstSiparis, 120))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "siparis_a4_rapor.png"));
+                }
+
+                Console.WriteLine("SIPARIS_SNAPSHOT_COMPLETED");
+                return;
+            }
+
             // Launch authentic MacroSoft Login Form
             Application.Run(new LoginForm());
         }

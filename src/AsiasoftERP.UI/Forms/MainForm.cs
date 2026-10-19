@@ -461,6 +461,7 @@ public class MainForm : Form
         // 5. TİCARİ & FATURA
         AddGroupIfAllowed("TİCARİ & FATURA", new List<NavItem>
         {
+            new("SiparisYonetimi", "📦  Sipariş Yönetimi", () => OpenModuleTab("SiparisYonetimi", "📦 Sipariş Yönetimi", () => new SiparisForm()), true),
             new("SatisIrsaliye", "🚚  Satış İrsaliyeleri", () => OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm()), true),
             new("AlisIrsaliye", "📥  Alış İrsaliyeleri", () => OpenModuleTab("AlisIrsaliye", "📥 Alış İrsaliyeleri", () => new AlisIrsaliyeForm()), true),
             new("SatisFatura", "📄  Satış Faturaları", () => OpenModuleTab("SatisFatura", "📄 Satış Faturaları", () => new FaturalarForm(FaturaTip.SatisFaturasi))),
@@ -693,6 +694,9 @@ public class MainForm : Form
                 break;
             case "StokEkstre":
                 OpenModuleTab("StokEkstre", "📊 Stok Ekstresi", () => new StokEkstreForm());
+                break;
+            case "SiparisYonetimi":
+                OpenModuleTab("SiparisYonetimi", "📦 Sipariş Yönetimi", () => new SiparisForm());
                 break;
             case "SatisIrsaliye":
                 OpenModuleTab("SatisIrsaliye", "🚚 Satış İrsaliyeleri", () => new SatisIrsaliyeForm());

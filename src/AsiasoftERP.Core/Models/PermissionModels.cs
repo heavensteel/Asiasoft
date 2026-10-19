@@ -49,6 +49,7 @@ public static class AppModuleRegistry
         new ModuleDefinition { Key = "StokEkstre", Title = "Stok Kartı Ekstresi", Category = "STOK & DEPO", Icon = "📊", Description = "Depo bazlı stok bakiye ve hareket ekstresi" },
 
         // 5. TİCARİ & FATURA
+        new ModuleDefinition { Key = "SiparisYonetimi", Title = "Sipariş Yönetimi", Category = "TİCARİ & FATURA", Icon = "📦", Description = "Alınan müşteri ve verilen satın alma siparişleri, palet-kasa takibi" },
         new ModuleDefinition { Key = "SatisIrsaliye", Title = "Satış İrsaliyeleri", Category = "TİCARİ & FATURA", Icon = "🚚", Description = "Sevkiyat ve satış irsaliyesi düzenleme" },
         new ModuleDefinition { Key = "AlisIrsaliye", Title = "Alış İrsaliyeleri", Category = "TİCARİ & FATURA", Icon = "📥", Description = "Mal kabul ve satın alma irsaliyeleri" },
         new ModuleDefinition { Key = "SatisFatura", Title = "Satış Faturaları", Category = "TİCARİ & FATURA", Icon = "📄", Description = "Yurt içi toptan satış faturaları" },
