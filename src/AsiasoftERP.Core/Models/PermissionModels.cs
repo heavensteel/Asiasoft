@@ -34,6 +34,7 @@ public static class AppModuleRegistry
 
         // 3. KANTAR & ÜRETİM
         new ModuleDefinition { Key = "YuklemeProgrami", Title = "Yükleme Programı", Category = "KANTAR & ÜRETİM", Icon = "🚚", Description = "İhracat ve iç piyasa araç yükleme planlaması" },
+        new ModuleDefinition { Key = "SeferMaliyet", Title = "Nakliye & Tır Sefer Maliyeti", Category = "KANTAR & ÜRETİM", Icon = "🚛", Description = "Tır seferleri, KM yakıt takibi, harcırah ve sefer kârlılık analizi" },
         new ModuleDefinition { Key = "Puantaj", Title = "Amele Puantaj Defteri", Category = "KANTAR & ÜRETİM", Icon = "📋", Description = "Günlük işçi yevmiye, mesai ve masraf defteri" },
         new ModuleDefinition { Key = "CavusServis", Title = "Çavuş & Servis Eşleme", Category = "KANTAR & ÜRETİM", Icon = "🤝", Description = "Hasat amele çavuşu, kantar ve servis hakediş mutabakatı" },
         new ModuleDefinition { Key = "BahceKesim", Title = "Bahçe Kesim & Alım Sözleşmeleri", Category = "KANTAR & ÜRETİM", Icon = "🌳", Description = "Sözleşmeli bahçe alımları, parsel rekoltesi ve kesim maliyeti" },

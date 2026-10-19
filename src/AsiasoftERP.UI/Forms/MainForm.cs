@@ -440,6 +440,7 @@ public class MainForm : Form
         AddGroupIfAllowed("KANTAR & ÜRETİM", new List<NavItem>
         {
             new("YuklemeProgrami", "🚚  Yükleme Programı", () => OpenModuleTab("YuklemeProgrami", "🚚 Yükleme Programı", () => new YuklemeProgramiForm()), true),
+            new("SeferMaliyet", "🚛  Tır Sefer Maliyeti", () => OpenModuleTab("SeferMaliyet", "🚛 Tır Sefer Maliyeti", () => new SeferMaliyetForm()), true),
             new("Puantaj", "📋  Amele Puantaj Defteri", () => OpenModuleTab("Puantaj", "📋 Amele Puantaj Defteri", () => new PuantajForm()), true),
             new("CavusServis", "🤝  Çavuş & Servis Eşleme", () => OpenModuleTab("CavusServis", "🤝 Çavuş & Servis Eşleme", () => new CavusKantarServisForm()), true),
             new("MalKabul", "⚖️  Mal Kabul & Canlı Kantar", () => OpenModuleTab("MalKabul", "⚖️ Mal Kabul & Kantar", () => new MalKabulForm())),
@@ -677,6 +678,9 @@ public class MainForm : Form
                 break;
             case "YuklemeProgrami":
                 OpenModuleTab("YuklemeProgrami", "🚚 Yükleme Programı", () => new YuklemeProgramiForm());
+                break;
+            case "SeferMaliyet":
+                OpenModuleTab("SeferMaliyet", "🚛 Tır Sefer Maliyeti", () => new SeferMaliyetForm());
                 break;
             case "Puantaj":
                 OpenModuleTab("Puantaj", "📋 Amele Puantaj Defteri", () => new PuantajForm());

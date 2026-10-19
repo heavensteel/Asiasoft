@@ -466,7 +466,7 @@ public class MustahsilMakbuzForm : Form
 
     private void Grid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
     {
-        if (e.RowIndex >= 0 && e.Graphics != null && _grid.Columns["OdenenFormatted"] != null && e.ColumnIndex == _grid.Columns["OdenenFormatted"].Index)
+        if (e.RowIndex >= 0 && e.Graphics != null && _grid.Columns["OdenenFormatted"] != null && e.ColumnIndex == _grid.Columns["OdenenFormatted"]!.Index)
         {
             e.PaintBackground(e.CellBounds, true);
             var valStr = e.Value?.ToString() ?? "";

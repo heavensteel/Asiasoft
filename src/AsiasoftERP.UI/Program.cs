@@ -40,8 +40,7 @@ static class Program
             System.Threading.Thread.CurrentThread.CurrentCulture = culture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
 
-            // Configure local database connection for Dapper and MariaDB
-            DbConnectionConfig.ConnectionString = "Server=127.0.0.1;Port=3306;Database=erp;User ID=root;Password=;AllowUserVariables=true;Pooling=true;MinPoolSize=5;MaxPoolSize=100;ConnectionTimeout=15;CharSet=utf8mb4;";
+            DbConnectionConfig.ConnectionString = "Server=127.0.0.1;Port=3306;Database=erp;User ID=root;Password=;AllowUserVariables=true;ConvertZeroDateTime=true;Pooling=true;MinPoolSize=5;MaxPoolSize=100;ConnectionTimeout=15;CharSet=utf8mb4;";
 
             if (args.Length > 0 && args[0] == "--snapshot-notifications")
             {
@@ -1106,6 +1105,119 @@ static class Program
                 }
 
                 Console.WriteLine("MUSTAHSIL_SNAPSHOT_COMPLETED");
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "--snapshot-sefer")
+            {
+                AppState.ActiveCompany = new CompanyDto { SirKod = 1, Adi = "TEK ASYA A.Ş." };
+                AppState.ActiveUser = new CompanyUserDto { KullaniciKodu = 100, KullaniciAdi = "Ali SARIGÜL", IsAdmin = true, Yetki = "A" };
+                AppState.SetAllowedModules(AppModuleRegistry.AllModules.Select(m => m.Key));
+
+                string outDir = @"C:\Users\PC\.gemini\antigravity\brain\f01c8499-00c7-4c14-92e1-12b9c47dce57";
+
+                var srv = new SeferMaliyetService();
+
+                // 1. Snapshot SeferMaliyetForm
+                var seferForm = new SeferMaliyetForm();
+                seferForm.StartPosition = FormStartPosition.Manual;
+                seferForm.Location = new Point(0, 0);
+                seferForm.Size = new Size(1380, 840);
+                seferForm.Show();
+                for (int i = 0; i < 30; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpMain = new Bitmap(seferForm.Width, seferForm.Height))
+                {
+                    seferForm.DrawToBitmap(bmpMain, new Rectangle(0, 0, seferForm.Width, seferForm.Height));
+                    bmpMain.Save(Path.Combine(outDir, "sefer_maliyet_genel_ekrani.png"));
+                }
+
+                // 2. Snapshot SeferMaliyetEditDialog
+                var seferler = srv.GetSeferlerAsync(DateTime.Today.AddDays(-180), DateTime.Today.AddDays(1)).GetAwaiter().GetResult();
+                var firstSefer = seferler.FirstOrDefault(s => s.FisNo == 2264) ?? new SeferFisDto
+                {
+                    FisNo = 2264,
+                    Tarih = DateTime.Today.AddDays(-5),
+                    SeferTuru = "YURT DIŞI",
+                    Durumu = "KAPALI",
+                    Plaka = "31 ACN 113",
+                    DorsePlaka = "31AIJ779",
+                    SurucuAdi = "KADİR BEREKET (LOJİSTİK)",
+                    CikisNoktasi = "ANTAKYA",
+                    VarisNoktasi = "ROMANYA / BÜKREŞ",
+                    YuklemeBosaltmaYeri = "BÜKREŞ MERKEZ HAL",
+                    YukCinsi = "LİMON - ENTER",
+                    CikisKm = 639289,
+                    DonusKm = 642150,
+                    CikisLitre = 450,
+                    ToplamAlinanLitre = 1100,
+                    SeferDonusKalanLitre = 380,
+                    SeferBedeli = 145000,
+                    SeferTutar = 2650,
+                    SeferDovizTuru = "EUR",
+                    DovizKur = 54.70,
+                    AlinanTlAvans = 15000,
+                    AlinanDovizAvans = 800,
+                    PrimTutariTl = 4000,
+                    ToplamMasrafTl = 48500,
+                    Aciklama = "Romanya Bükreş teslimatı eksiksiz yapıldı. Mazot ve DKV transit harcamaları eklendi."
+                };
+
+                firstSefer.CikisNoktasi = "ANTAKYA";
+                firstSefer.VarisNoktasi = "ROMANYA / BÜKREŞ";
+                firstSefer.YuklemeBosaltmaYeri = "BÜKREŞ MERKEZ HAL";
+                firstSefer.YukCinsi = "LİMON - ENTER";
+                firstSefer.SeferTuru = "YURT DIŞI";
+                firstSefer.Durumu = "KAPALI";
+                firstSefer.Plaka = "31 ACN 113";
+                firstSefer.DorsePlaka = "31AIJ779";
+                firstSefer.SurucuAdi = "KADİR BEREKET (LOJİSTİK)";
+                if (firstSefer.SeferBedeli <= 1) firstSefer.SeferBedeli = 145000;
+                if (firstSefer.CikisKm == 0) firstSefer.CikisKm = 639289;
+                if (firstSefer.DonusKm == 0 || firstSefer.DonusKm <= firstSefer.CikisKm) firstSefer.DonusKm = 642150;
+                if (firstSefer.CikisLitre == 0) firstSefer.CikisLitre = 450;
+                if (firstSefer.ToplamAlinanLitre == 0) firstSefer.ToplamAlinanLitre = 1100;
+                if (firstSefer.SeferDonusKalanLitre == 0) firstSefer.SeferDonusKalanLitre = 380;
+                if (firstSefer.AlinanTlAvans == 0) firstSefer.AlinanTlAvans = 15000;
+                if (firstSefer.PrimTutariTl == 0) firstSefer.PrimTutariTl = 4000;
+                firstSefer.Aciklama = "Romanya Bükreş teslimatı eksiksiz yapıldı. Mazot ve DKV transit harcamaları eklendi.";
+
+                firstSefer.Detaylar = srv.GetSeferDetaylarAsync(firstSefer.FisNo).GetAwaiter().GetResult();
+                if (firstSefer.Detaylar.Count == 0)
+                {
+                    firstSefer.Detaylar = new List<SeferDetayDto>
+                    {
+                        new() { Tarih = DateTime.Today.AddDays(-4), HizmetAdi = "E-100 BOX İLE BULGARİSTAN YOL ÜCRETİ", Birim = "EUR", DovizTutari = 210, Tutar = 11487, Aciklama = "E100 No:48712" },
+                        new() { Tarih = DateTime.Today.AddDays(-4), HizmetAdi = "ROMANYA VİGNETTA FAZLASI", Birim = "EUR", DovizTutari = 85, Tutar = 4649, Aciklama = "Vignetta 7 Günlük" },
+                        new() { Tarih = DateTime.Today.AddDays(-3), HizmetAdi = "GESTAŞ ÇANAKKALE FERİBOT ÜCRETİ", Birim = "TL", DovizTutari = 0, Tutar = 3850, Aciklama = "Gestaş Çanakkale Geçiş" },
+                        new() { Tarih = DateTime.Today.AddDays(-3), HizmetAdi = "T1 ÜCRETİ", Birim = "EUR", DovizTutari = 120, Tutar = 6564, Aciklama = "Kapıkule T1 Transit" },
+                        new() { Tarih = DateTime.Today.AddDays(-2), HizmetAdi = "DKV KART İLE BULGARİSTAN KÖPRÜ", Birim = "EUR", DovizTutari = 68, Tutar = 3719, Aciklama = "Ruse Köprüsü" },
+                        new() { Tarih = DateTime.Today.AddDays(-1), HizmetAdi = "KAPİTAN ANDREEVO SAHA ÜCRETİ", Birim = "EUR", DovizTutari = 45, Tutar = 2461, Aciklama = "Giriş Dezenfeksiyon" }
+                    };
+                    firstSefer.ToplamMasrafTl = firstSefer.Detaylar.Sum(d => d.Tutar);
+                }
+
+                var editDlg = new SeferMaliyetEditDialog(firstSefer);
+                editDlg.StartPosition = FormStartPosition.Manual;
+                editDlg.Location = new Point(100, 60);
+                editDlg.Show();
+                for (int i = 0; i < 20; i++) { Application.DoEvents(); System.Threading.Thread.Sleep(30); }
+
+                using (var bmpDlg = new Bitmap(editDlg.Width, editDlg.Height))
+                {
+                    editDlg.DrawToBitmap(bmpDlg, new Rectangle(0, 0, editDlg.Width, editDlg.Height));
+                    bmpDlg.Save(Path.Combine(outDir, "sefer_maliyet_dialog_ekrani.png"));
+                }
+                editDlg.Close();
+                seferForm.Close();
+
+                // 3. Snapshot Sefer A4 Report
+                using (var bmpA4 = SeferMaliyetReportRenderer.RenderToBitmap(firstSefer, 120))
+                {
+                    bmpA4.Save(Path.Combine(outDir, "sefer_maliyet_a4_rapor.png"));
+                }
+
+                Console.WriteLine("SEFER_SNAPSHOT_COMPLETED");
                 return;
             }
 
